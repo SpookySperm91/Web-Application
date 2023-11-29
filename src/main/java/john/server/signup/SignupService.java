@@ -28,15 +28,16 @@ public class SignupService {
         // Check if given email exist
         Optional<UserEntity> emailExists = userRepository.findEmail(email);
 
-        if (emailExists.isEmpty()) {
-            // Email exist, prompt user again
-            return ResponseEntity.badRequest().body("Email already exists. Please enter a new one.");
-        } else {
-            // Email does not exist, proceed to register
-            return ResponseEntity.ok("Email verification successful. Proceed to register.");
-        }
-    }
 
+        return emailExists.map(
+                // Email does not exist, proceed to register
+                userEntity
+                        -> ResponseEntity.ok("DEFAULT RESPONSE: Email doesn't exist. Proceed to register"))
+                // Email already exist
+                .orElseGet(()
+                        -> ResponseEntity.badRequest().body("DEFAULT RESPONSE: Error. Email already exist"));
+
+    }
 
 
 
@@ -60,14 +61,14 @@ public class SignupService {
                             hashedPassword, salt,
                             request.getEmail(),
                             DateCreated);
-            return ResponseEntity.ok("Account created successfully!");
+            return ResponseEntity.ok("DEFAULT RESPONSE: Registration successful");
+
 
         } catch (Exception e) {
             // Handle any unexpected errors during account creation
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to create an account. Please try again later.");
+                    .body("DEFAULT RESPONSE: Error. Server failed to create account");
         }
     }
-
 
 }

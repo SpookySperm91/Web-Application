@@ -20,20 +20,23 @@ public class SignupController {
 
     @PostMapping("/signup")
     public ResponseEntity<String> SignupUser(@RequestBody DTO request) {
-
+        // Check email if exist
         ResponseEntity<String> emailResponse = signupService.checkEmailExistFirst(request.getEmail());
 
         if (emailResponse.getStatusCode() == HttpStatus.BAD_REQUEST) {
-            return emailResponse;
+            return ResponseEntity.badRequest().body("ERROR: Email already exist");
         }
+
+
 
         ResponseEntity<String> signupResponse = signupService.signupNewAccount(request);
 
         if (signupResponse.getStatusCode() == HttpStatus.OK) {
-            return signupResponse; // Registration successful
+            return ResponseEntity.ok("SUCCESS: Registration successful"); // Registration successful
         } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to create an account. Please try again later.");
+            return ResponseEntity.status(signupResponse.getStatusCode())
+                    .body("ERROR: Failed to create an account.");
         }
     }
+
 }
