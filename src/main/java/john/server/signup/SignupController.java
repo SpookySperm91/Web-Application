@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("/api/signup")
 public class SignupController {
     private final SignupService signupService;
 
@@ -18,7 +18,7 @@ public class SignupController {
         this.signupService = signupService;
     }
 
-    @PostMapping("/signup")
+    @PostMapping ("/create")
     public ResponseEntity<String> SignupUser(@RequestBody DTO request) {
         // Check email if exist
         ResponseEntity<String> emailResponse = signupService.checkEmailExistFirst(request.getEmail());

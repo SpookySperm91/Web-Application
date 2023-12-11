@@ -26,7 +26,7 @@ public class SignupService {
 
     public ResponseEntity<String> checkEmailExistFirst(String email){
         // Check if given email exist
-        Optional<UserEntity> emailExists = userRepository.findEmail(email);
+        Optional<UserEntity> emailExists = userRepository.findByEmail(email);
 
 
         return emailExists.map(
@@ -56,7 +56,7 @@ public class SignupService {
             LocalDateTime DateCreated = LocalDateTime.now();
 
             // Save the new account and handle the response
-            userRepository.saveNewAccount
+            userRepository.saveUserAccount
                     (request.getUsername(),
                             hashedPassword, salt,
                             request.getEmail(),

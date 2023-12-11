@@ -8,19 +8,21 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
-@Repository
-public class CustomRepository
-        implements checkEmail, saveNewUserAccount{
-    private final MongoTemplate mongoTemplate;
-    @Autowired
-    public CustomRepository(MongoTemplate mongoTemplate) {
-        this.mongoTemplate = mongoTemplate;
 
+@Repository
+public class UserCustomRepositoryImpl
+        implements UserCustomRepository {
+    private final MongoTemplate mongoTemplate;
+
+    @Autowired
+    public UserCustomRepositoryImpl(MongoTemplate mongoTemplate) {
+        this.mongoTemplate = mongoTemplate;
     }
 
-    public Optional<UserEntity> findEmail(String email) {
+    @Override
+    public Optional<UserEntity> findByEmail(String email) {
         // Define the query criteria to find a document with the specified email
-        Query query = new Query(Criteria.where("account.email").is(email));
+        Query query = new Query(Criteria.where("email").is(email));
 
         // Use the MongoTemplate to execute the query and get the result
         UserEntity result = mongoTemplate.findOne(query, UserEntity.class);
@@ -29,17 +31,14 @@ public class CustomRepository
         return Optional.ofNullable(result);
     }
 
-    public void saveNewAccount(String username,
-                               String hashedPassword, String salt,
-                               String email,
-                               LocalDateTime accountDateCreated) {
-        // Create instance
-        UserDataEntity userData =
-                new UserDataEntity(username, hashedPassword, salt, email, accountDateCreated);
 
-        // Save instance into UserEntity
-        UserEntity newUser =
-                new UserEntity(null, userData);
+    @Override
+    public void saveUserAccount(String username,
+                                String hashedPassword, String salt,
+                                String email,
+                                LocalDateTime accountDateCreated) {
+        // Create instance
+        UserEntity newUser = new UserEntity(null, username, hashedPassword, salt, email, accountDateCreated);
 
         // Save
         mongoTemplate.save(newUser);

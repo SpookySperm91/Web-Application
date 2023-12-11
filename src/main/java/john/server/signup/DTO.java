@@ -3,6 +3,7 @@ package john.server.signup;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+
 @AllArgsConstructor
 @Getter
 public class DTO {
