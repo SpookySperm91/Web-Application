@@ -8,7 +8,7 @@ import java.util.Optional;
 public interface UserCustomRepository {
     Optional<UserEntity> findByEmail(String email);
 
-    void saveUserAccount(String username,
+    UserEntity saveUserAccount(String username,
                          String hashedPassword, String salt,
                          String email,
                          LocalDateTime accountDateCreated);
