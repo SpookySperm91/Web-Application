@@ -43,4 +43,11 @@ public class UserCustomRepositoryImpl
         // Save
         return mongoTemplate.save(newUser);
     }
+
+
+    @Override
+    public Optional<UserEntity> updatePassword(UserEntity user, String newPassword) {
+        user.setPassword(newPassword);
+        return Optional.of(mongoTemplate.save(user));
+    }
 }

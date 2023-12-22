@@ -1,5 +1,7 @@
 package john.server.signup;
 
+import john.server.common.dto.UserDTO;
+import john.server.common.dto.CheckUserInput;
 import john.server.repository_entity.UserEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -9,7 +11,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.Valid;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/api/signup")
@@ -21,27 +28,28 @@ public class SignupController {
         this.signupService = signupService;
     }
 
-    @PostMapping("/create")
-    public ResponseEntity<String> SignupUser(@RequestBody SignupDTO request) {
-        try {
-            // Check email if exist
-            Optional<UserEntity> emailResponse = signupService.checkEmailExistFirst(request.getEmail());
+    @PostMapping("/create-user")
+    public ResponseEntity<String> SignupUser(@Valid @RequestBody UserDTO request) {
+        // Check user inputs for validation
+        CheckUserInput email = signupService.checkEmail(request.getEmail());
+        CheckUserInput username = signupService.checkUsername(request.getUsername());
 
-            if (emailResponse.isPresent()) {
-                return ResponseEntity.badRequest().body("ERROR: Email already exist");
-            }
+        List<String> errorMessages = Stream.of(email.getMessage(), username.getMessage())
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
 
-            // Proceed to create new account
-            Optional<UserEntity> signupResponse = signupService.signupNewAccount(request);
+        if (!email.isSuccess() || !username.isSuccess()) {
+            return ResponseEntity.badRequest().body("ERROR: " + String.join(", ", errorMessages));
+        }
 
-            if (signupResponse.isPresent()) {
-                return ResponseEntity.ok("SUCCESS: Registration successful"); // Registration successful
-            } else {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("ERROR: Failed to create an account");
-            }
+        // Proceed to create new account
+        Optional<UserEntity> signupResponse = signupService.signupNewAccount(request);
 
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body("ERROR: Invalid email format");
+        if (signupResponse.isPresent()) {
+            return ResponseEntity.ok("SUCCESS: Registration successful"); // Registration successful
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("ERROR: Failed to create an account");
         }
     }
 }
+

@@ -13,8 +13,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Data
 public class UserEntity {
-    @JsonIgnore
     @Id
+    @JsonIgnore
     private ObjectId id;
     private String username;
     @JsonIgnore

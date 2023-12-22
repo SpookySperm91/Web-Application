@@ -1,9 +1,11 @@
 package john.server.signup;
 
+import john.server.common.dto.UserDTO;
+import john.server.common.dto.CheckUserInput;
 import john.server.repository_entity.UserEntity;
 import john.server.repository_entity.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.apache.commons.validator.routines.EmailValidator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,18 +24,33 @@ public class SignupService {
         this.passwordEncoder = passwordEncoder;
     }
 
-
-    public Optional<UserEntity> checkEmailExistFirst(String email) {
-        if (!EmailValidator.getInstance().isValid(email)) {
-            // Handle invalid email format
-            throw new IllegalArgumentException("Invalid email format");
+    public CheckUserInput checkEmail(String email) {
+        if (email == null || email.isEmpty()) {
+            return new CheckUserInput(false, "Email is empty");
         }
-        // Check if given email exists
-        return userRepository.findByEmail(email);
+        if (!EmailValidator.getInstance().isValid(email)) {
+            return new CheckUserInput(false, "Invalid email format");
+        }
+        if (userRepository.findByEmail(email).isPresent()) {
+            return new CheckUserInput(false, "Account already exists");
+        }
+
+        return new CheckUserInput(true);
+    }
+
+    public CheckUserInput checkUsername(String username) {
+        if (username == null || username.isEmpty()) {
+            return new CheckUserInput(false, "Username is empty");
+        }
+        if (username.length() > 20) {
+            return new CheckUserInput(false, "Username exceeds maximum characters");
+        }
+
+        return new CheckUserInput(true);
     }
 
 
-    public Optional<UserEntity> signupNewAccount(SignupDTO request) {
+    public Optional<UserEntity> signupNewAccount(UserDTO request) {
         try {
             String password = request.getPassword();
             String salt = BCrypt.gensalt(); // Generate a unique salt

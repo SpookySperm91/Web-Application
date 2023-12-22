@@ -1,4 +1,4 @@
-package john.server.config;
+package john.server.common.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

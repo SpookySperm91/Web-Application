@@ -12,4 +12,6 @@ public interface UserCustomRepository {
                          String hashedPassword, String salt,
                          String email,
                          LocalDateTime accountDateCreated);
+
+    Optional<UserEntity> updatePassword(UserEntity user, String password);
 }
