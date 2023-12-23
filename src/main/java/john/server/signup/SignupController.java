@@ -1,8 +1,10 @@
 package john.server.signup;
 
-import john.server.common.dto.UserDTO;
 import john.server.common.dto.CheckUserInput;
-import john.server.repository_entity.UserEntity;
+import john.server.common.dto.ResponseFormat;
+import john.server.common.dto.ResponseType;
+import john.server.common.dto.UserDTO;
+import org.owasp.encoder.Encode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.validation.Valid;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -28,27 +29,50 @@ public class SignupController {
         this.signupService = signupService;
     }
 
+
+    // CHECK USER'S INPUTS BEFORE SIGNUP
+    // Sanitize user inputs from malicious attempt
+    // Check email and username format; Return bad response if error occurs
+    // Proceed to create new account
+    // Return response
     @PostMapping("/create-user")
-    public ResponseEntity<String> SignupUser(@Valid @RequestBody UserDTO request) {
-        // Check user inputs for validation
-        CheckUserInput email = signupService.checkEmail(request.getEmail());
-        CheckUserInput username = signupService.checkUsername(request.getUsername());
+    public ResponseEntity<ResponseFormat> SignupUser(@Valid @RequestBody UserDTO request) {
+        String emailProvided = Encode.forHtml(request.getEmail());
+        String usernameProvided = Encode.forHtml(request.getUsername());
+
+        CheckUserInput email = signupService.checkEmail(emailProvided);
+        CheckUserInput username = signupService.checkUsername(usernameProvided);
 
         List<String> errorMessages = Stream.of(email.getMessage(), username.getMessage())
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
         if (!email.isSuccess() || !username.isSuccess()) {
-            return ResponseEntity.badRequest().body("ERROR: " + String.join(", ", errorMessages));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(
+                            new ResponseFormat(ResponseType.SIGNUP_ERROR,
+                                    "ERROR: " + String.join(", ", errorMessages),
+                                    HttpStatus.BAD_REQUEST));
         }
 
-        // Proceed to create new account
-        Optional<UserEntity> signupResponse = signupService.signupNewAccount(request);
+        CheckUserInput signupResponse = signupService.signupNewAccount(request);
 
-        if (signupResponse.isPresent()) {
-            return ResponseEntity.ok("SUCCESS: Registration successful"); // Registration successful
+        if (signupResponse.isSuccess()) {
+            // Registration successful
+            return ResponseEntity.status(signupResponse.getHttpStatus())
+                    .body(
+                            new ResponseFormat(ResponseType.SIGNUP_SUCCESS,
+                                    signupResponse.getMessage(),
+                                    signupResponse.getHttpStatus())
+                    );
         } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("ERROR: Failed to create an account");
+            // Failed to register
+            return ResponseEntity.status(signupResponse.getHttpStatus())
+                    .body(
+                            new ResponseFormat(ResponseType.SIGNUP_ERROR,
+                                    signupResponse.getMessage(),
+                                    signupResponse.getHttpStatus())
+                    );
         }
     }
 }

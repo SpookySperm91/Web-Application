@@ -4,10 +4,10 @@ import john.server.common.dto.CheckUserInput;
 import john.server.repository_entity.UserEntity;
 import john.server.repository_entity.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import javax.validation.constraints.NotNull;
 import java.util.Optional;
 
 
@@ -23,27 +23,41 @@ public class ForgetPasswordService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    // Verify user account if exist
+
+    // VERIFY USER ACCOUNT IF EXIST
+    // Check input formats
+    // Check provided email if account exist
+    // Check if provided password matched
     public CheckUserInput verifyAccountFirst(String email, String password) {
         if (email.isEmpty() || password.isEmpty()) {
-            return new CheckUserInput(false, "Empty email and/or password");
+            return new CheckUserInput(
+                    false,
+                    "Empty email and / or password",
+                    HttpStatus.LENGTH_REQUIRED);
         }
 
         Optional<UserEntity> checkUserEmail = userRepository.findByEmail(email);
+
         if (checkUserEmail.isEmpty()) {
-            return new CheckUserInput(false, "Invalid email");
+            return new CheckUserInput(
+                    false,
+                    "Invalid email",
+                    HttpStatus.BAD_REQUEST);
         }
-        // Check if password matched
         return checkPassword(checkUserEmail.get(), password);
     }
 
+
+    // CHECK PASSWORD IF MATCHED
     // Validate provided password against stored user password
     // Returns true with user account instantiated
-    public CheckUserInput checkPassword(@NotNull UserEntity user, String providedPassword) {
+    public CheckUserInput checkPassword(UserEntity user, String providedPassword) {
         if (!isPasswordValid(user, providedPassword)) {
-            return new CheckUserInput(false, "Invalid password");
+            return new CheckUserInput(
+                    false,
+                    "Invalid password",
+                    HttpStatus.BAD_REQUEST);
         }
-        // Password is valid; instantiate user account
         return new CheckUserInput(true, user);
     }
     private boolean isPasswordValid(UserEntity user, String providedPassword) {
@@ -51,25 +65,32 @@ public class ForgetPasswordService {
         return passwordEncoder.matches(saltedPassword, user.getPassword());
     }
 
-    // Reset password after validation
-    public CheckUserInput resetPassword(@NotNull UserEntity user, String newPassword) throws Exception {
+
+    // VALIDATE USER INPUTS FIRST BEFORE RESET PASSWORD
+    // Check new provided password first if not empty
+    // Save new password; Return false if SYSTEM error persist
+    public CheckUserInput resetPassword(UserEntity user, String newPassword) {
         if (newPassword.isEmpty()) {
-            return new CheckUserInput(false, "Empty password");
+            return new CheckUserInput(
+                    false,
+                    "Empty password",
+                    HttpStatus.LENGTH_REQUIRED);
         }
 
-        try {
             String saltedPassword = user.getSalt() + newPassword;
             String hashedPassword = passwordEncoder.encode(saltedPassword);
 
             Optional<UserEntity> updatedUser = userRepository.updatePassword(user, hashedPassword);
 
             if (updatedUser.isPresent()) {
-                return new CheckUserInput(true, "Password reset successfully");
+                return new CheckUserInput(
+                        true,
+                        "Password reset successfully",
+                        HttpStatus.OK);
             }
-            return new CheckUserInput(false, "Password reset fail");
-
-        } catch (Exception e) {
-            throw new Exception("Error resetting password", e);
-        }
+            return new CheckUserInput(
+                    false,
+                    "Password reset fail",
+                    HttpStatus.SERVICE_UNAVAILABLE);
     }
 }
