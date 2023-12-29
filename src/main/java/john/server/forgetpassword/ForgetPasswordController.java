@@ -1,7 +1,7 @@
 package john.server.forgetpassword;
 
-import john.server.common.dto.CheckUserInput;
-import john.server.common.dto.PasswordDTO;
+import john.server.common.dto.ResponseLayer;
+import john.server.common.dto.DTOPassword;
 import john.server.common.dto.ResponseFormat;
 import john.server.common.dto.ResponseType;
 import org.apache.commons.validator.routines.EmailValidator;
@@ -29,11 +29,11 @@ public class ForgetPasswordController {
     // Sanitize email and password from any malicious, check email format
     // Proceed to next method if user inputs pass cleanup check
     @PutMapping("/reset-password")
-    public ResponseEntity<ResponseFormat> ForgetPasswordUser(@RequestBody PasswordDTO request) {
-        String email = Encode.forHtml(request.getEmail());
-        String password = Encode.forHtml(request.getPassword());
+    public ResponseEntity<ResponseFormat> ForgetPasswordUser(@RequestBody DTOPassword request) {
+        String sanitizedEmail = Encode.forHtml(request.getEmail());
+        String sanitizedPassword = Encode.forHtml(request.getPassword());
 
-        if (request.getEmail().isEmpty() || !EmailValidator.getInstance().isValid(email)) {
+        if (request.getEmail().isEmpty() || !EmailValidator.getInstance().isValid(sanitizedEmail)) {
             String message = "ERROR: Invalid email format";
             HttpStatus status = HttpStatus.NOT_ACCEPTABLE;
 
@@ -41,7 +41,7 @@ public class ForgetPasswordController {
                     new ResponseFormat(
                             ResponseType.RESET_PASSWORD_ERROR, message, status));
         }
-        return validateAndResetPassword(email, password, request);
+        return validateAndResetPassword(sanitizedEmail, sanitizedPassword, request);
     }
 
 
@@ -49,9 +49,10 @@ public class ForgetPasswordController {
     // Verify email and check password first
     // Proceed to reset password if validation is true
     // Return response
-    private ResponseEntity<ResponseFormat> validateAndResetPassword(String email, String password, PasswordDTO request) {
-        CheckUserInput validateAccount = forgetPasswordService.verifyAccountFirst(email, password);
+    private ResponseEntity<ResponseFormat> validateAndResetPassword(String email, String password, DTOPassword request) {
+        ResponseLayer validateAccount = forgetPasswordService.verifyAccountFirst(email, password);
 
+        // Return as fail if validation is false
         if (!validateAccount.isSuccess()) {
             return ResponseEntity.status(validateAccount.getHttpStatus())
                     .body(
@@ -61,7 +62,7 @@ public class ForgetPasswordController {
                                     validateAccount.getHttpStatus()));
         }
 
-        CheckUserInput changePassword = forgetPasswordService.resetPassword
+        ResponseLayer changePassword = forgetPasswordService.resetPassword
                 (validateAccount.getUserEntity(), request.getNewPassword());
 
         // Return as success

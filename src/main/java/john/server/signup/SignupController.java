@@ -1,9 +1,9 @@
 package john.server.signup;
 
-import john.server.common.dto.CheckUserInput;
+import john.server.common.dto.ResponseLayer;
 import john.server.common.dto.ResponseFormat;
 import john.server.common.dto.ResponseType;
-import john.server.common.dto.UserDTO;
+import john.server.common.dto.DTOUser;
 import org.owasp.encoder.Encode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -36,18 +36,20 @@ public class SignupController {
     // Proceed to create new account
     // Return response
     @PostMapping("/create-user")
-    public ResponseEntity<ResponseFormat> SignupUser(@Valid @RequestBody UserDTO request) {
-        String emailProvided = Encode.forHtml(request.getEmail());
-        String usernameProvided = Encode.forHtml(request.getUsername());
+    public ResponseEntity<ResponseFormat> SignupUser(@Valid @RequestBody DTOUser request) {
+        String sanitizedEmail = Encode.forHtml(request.getEmail());
+        String sanitizedUsername = Encode.forHtml(request.getUsername());
+        String sanitizedPassword = Encode.forHtml(request.getPassword());
 
-        CheckUserInput email = signupService.checkEmail(emailProvided);
-        CheckUserInput username = signupService.checkUsername(usernameProvided);
+        ResponseLayer email = signupService.checkEmail(sanitizedEmail);
+        ResponseLayer username = signupService.checkUsername(sanitizedUsername);
+        ResponseLayer password  = signupService.checkPassword(sanitizedPassword);
 
-        List<String> errorMessages = Stream.of(email.getMessage(), username.getMessage())
+        List<String> errorMessages = Stream.of(email.getMessage(), username.getMessage(), password.getMessage())
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        if (!email.isSuccess() || !username.isSuccess()) {
+        if (!email.isSuccess() || !username.isSuccess() || !password.isSuccess()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(
                             new ResponseFormat(ResponseType.SIGNUP_ERROR,
@@ -55,7 +57,7 @@ public class SignupController {
                                     HttpStatus.BAD_REQUEST));
         }
 
-        CheckUserInput signupResponse = signupService.signupNewAccount(request);
+        ResponseLayer signupResponse = signupService.signupNewAccount(request, sanitizedPassword);
 
         if (signupResponse.isSuccess()) {
             // Registration successful

@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
-public class PasswordDTO extends UserDTO{
-    private String newPassword;
+public class DTOUser {
+    private String username;
+    private String email;
+    private String password;
 }

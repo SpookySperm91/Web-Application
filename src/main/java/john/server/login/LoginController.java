@@ -1,9 +1,9 @@
 package john.server.login;
 
-import john.server.common.dto.CheckUserInput;
+import john.server.common.dto.ResponseLayer;
+import john.server.common.dto.DTOUser;
 import john.server.common.dto.ResponseFormat;
 import john.server.common.dto.ResponseType;
-import john.server.common.dto.UserDTO;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.owasp.encoder.Encode;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,11 +32,19 @@ public class LoginController {
     // Authenticate user with the provided email and password
     // Return response
     @PostMapping("/login-user")
-    public ResponseEntity<ResponseFormat> LoginUser(@RequestBody UserDTO request) {
+    public ResponseEntity<ResponseFormat> LoginUser(@RequestBody DTOUser request) {
         String sanitizedEmail = Encode.forHtml(request.getEmail());
         String sanitizedPassword = Encode.forHtml(request.getPassword());
 
-        if (request.getEmail() == null || !EmailValidator.getInstance().isValid(sanitizedEmail)) {
+        if (request.getEmail().isEmpty()){
+            return ResponseEntity.status(HttpStatus.LENGTH_REQUIRED)
+                    .body(
+                            new ResponseFormat(ResponseType.LOGIN_ERROR,
+                                    "Email input is empty",
+                                    HttpStatus.LENGTH_REQUIRED));
+        }
+
+        if (!EmailValidator.getInstance().isValid(sanitizedEmail)) {
             return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
                     .body(
                             new ResponseFormat(ResponseType.LOGIN_ERROR,
@@ -44,7 +52,7 @@ public class LoginController {
                                     HttpStatus.NOT_ACCEPTABLE));
         }
 
-        CheckUserInput loginVerify = loginService.authenticateUser(sanitizedEmail, sanitizedPassword);
+        ResponseLayer loginVerify = loginService.authenticateUser(sanitizedEmail, sanitizedPassword);
 
         if (loginVerify.isSuccess()) {
             return ResponseEntity.status(loginVerify.getHttpStatus())

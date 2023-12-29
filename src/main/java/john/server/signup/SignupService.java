@@ -1,7 +1,7 @@
 package john.server.signup;
 
-import john.server.common.dto.CheckUserInput;
-import john.server.common.dto.UserDTO;
+import john.server.common.dto.DTOUser;
+import john.server.common.dto.ResponseLayer;
 import john.server.repository_entity.UserRepository;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +11,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 public class SignupService {
@@ -24,32 +27,67 @@ public class SignupService {
     }
 
 
-    // CHECK PROVIDED EMAIL; Return response to the Controller
-    public CheckUserInput checkEmail(String email) {
-        if (email == null || email.isEmpty()) {
-            return new CheckUserInput(false, "Email is empty");
+    // CHECK PROVIDED USERNAME; Return response to the Controller
+    public ResponseLayer checkUsername(String username) {
+        if (username == null || username.isEmpty()) {
+            return new ResponseLayer(false, "Username is empty");
         }
-        if (!EmailValidator.getInstance().isValid(email)) {
-            return new CheckUserInput(false, "Invalid email format");
-        }
-        if (userRepository.findByEmail(email).isPresent()) {
-            return new CheckUserInput(false, "Account already exists");
+        if (username.length() > 20) {
+            return new ResponseLayer(false, "Username exceeds maximum characters");
         }
 
-        return new CheckUserInput(true);
+        return new ResponseLayer(true);
     }
 
 
-    // CHECK PROVIDED USERNAME; Return response to the Controller
-    public CheckUserInput checkUsername(String username) {
-        if (username == null || username.isEmpty()) {
-            return new CheckUserInput(false, "Username is empty");
+    // CHECK PROVIDED EMAIL; Return response to the Controller
+    public ResponseLayer checkEmail(String email) {
+        if (email == null || email.isEmpty()) {
+            return new ResponseLayer(false, "Email is empty");
         }
-        if (username.length() > 20) {
-            return new CheckUserInput(false, "Username exceeds maximum characters");
+        if (!EmailValidator.getInstance().isValid(email)) {
+            return new ResponseLayer(false, "Invalid email format");
+        }
+        if (userRepository.findByEmail(email).isPresent()) {
+            return new ResponseLayer(false, "Account already exists");
         }
 
-        return new CheckUserInput(true);
+        return new ResponseLayer(true);
+    }
+
+    // CHECK PROVIDED PASSWORD; Return response to the Controller
+    public ResponseLayer checkPassword(String password) {
+        if (password == null || password.isEmpty()) {
+            return new ResponseLayer(false, "Password is empty");
+        }
+        if (password.length() > 30) {
+            return new ResponseLayer(false, "Password exceeds maximum characters");
+        }
+        if (password.length() < 8) {
+            return new ResponseLayer(false, "Password is weak(tip: password length should be more than 8)");
+        }
+
+        boolean hasLower = false, hasUpper = false, hasDigit = false, specialChar = false;
+        Set<Character> set = new HashSet<>(
+                Arrays.asList('!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '+', '='));
+
+        for (char i : password.toCharArray()) {
+            if (Character.isLowerCase(i))
+                hasLower = true;
+            if (Character.isUpperCase(i))
+                hasUpper = true;
+            if (Character.isDigit(i))
+                hasDigit = true;
+            if (set.contains(i))
+                specialChar = true;
+        }
+
+        if (hasLower && hasUpper // Both case should true if no characters or numbers
+                || hasDigit || specialChar) {
+            return new ResponseLayer(true);
+        } else {
+            return new ResponseLayer(false, "Password is weak(tip: add special characters or numbers; *#$45)");
+        }
     }
 
 
@@ -58,15 +96,15 @@ public class SignupService {
 
     // -- Password Hashing Procedure -- //
     // Generate a unique salt
-    // Combine the salt and password (hashed-password = salt + provided password)
+    // Combine the salt and password (hashedPassword = salt + provided password)
     // Hash the salted password
+    // ---------------------- //
 
     // Set Date for creation
     // Save the new account
     // Return response
-    public CheckUserInput signupNewAccount(UserDTO request) {
+    public ResponseLayer signupNewAccount(DTOUser request, String password) {
         try {
-            String password = request.getPassword();
             String salt = BCrypt.gensalt(); // Generate a unique salt
 
             String saltedPassword = salt + password;
@@ -79,13 +117,13 @@ public class SignupService {
                             hashedPassword, salt,
                             request.getEmail(),
                             DateCreated);
-            return new CheckUserInput(true,
+            return new ResponseLayer(true,
                     "Registration successful",
                     HttpStatus.OK);
 
 
         } catch (Exception e) {
-            return new CheckUserInput(false,
+            return new ResponseLayer(false,
                     "Failed to create an account",
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }

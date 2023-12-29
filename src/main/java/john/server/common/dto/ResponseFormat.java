@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.http.HttpStatus;
 
-
+// RESPONSE BACK TO THE CLIENT/FRONTEND AS A JSON FORMAT
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

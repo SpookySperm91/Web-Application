@@ -33,7 +33,7 @@ public class UserCustomRepositoryImpl
 
 
     @Override
-    public UserEntity saveUserAccount(String username,
+    public void saveUserAccount(String username,
                                 String hashedPassword, String salt,
                                 String email,
                                 LocalDateTime accountDateCreated) {
@@ -41,7 +41,7 @@ public class UserCustomRepositoryImpl
         UserEntity newUser = new UserEntity(null, username, hashedPassword, salt, email, accountDateCreated);
 
         // Save
-        return mongoTemplate.save(newUser);
+        mongoTemplate.save(newUser);
     }
 
 

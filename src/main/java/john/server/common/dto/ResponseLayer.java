@@ -6,32 +6,32 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.http.HttpStatus;
 
-
+// RESPONSE BACK TO THE CONTROLLER FROM THE SERVICE
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CheckUserInput {
+public class ResponseLayer {
     private boolean success;
     private String message;
     private UserEntity userEntity;
     private HttpStatus httpStatus;
 
-    public CheckUserInput(Boolean success, String message, HttpStatus httpStatus) {
+    public ResponseLayer(Boolean success, String message, HttpStatus httpStatus) {
         this.success = success;
         this.message = message;
         this.httpStatus = httpStatus;
     }
 
-    public CheckUserInput(Boolean success, String message) {
+    public ResponseLayer(Boolean success, String message) {
         this.success = success;
         this.message = message;
     }
 
-    public CheckUserInput(Boolean success, UserEntity userEntity){
+    public ResponseLayer(Boolean success, UserEntity userEntity){
         this.success = success;
         this.userEntity = userEntity;
     }
-    public CheckUserInput(Boolean success){
+    public ResponseLayer(Boolean success){
         this.success = success;
     }
 

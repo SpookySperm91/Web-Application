@@ -1,6 +1,7 @@
 package john.server.forgetpassword;
 
-import john.server.common.dto.CheckUserInput;
+import john.server.common.components.interfaces.PasswordComparison;
+import john.server.common.dto.ResponseLayer;
 import john.server.repository_entity.UserEntity;
 import john.server.repository_entity.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,31 +16,33 @@ import java.util.Optional;
 public class ForgetPasswordService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final PasswordComparison passwordComparison;
 
 
     @Autowired
-    public ForgetPasswordService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
+    public ForgetPasswordService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, PasswordComparison passwordComparison) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.passwordComparison = passwordComparison;
     }
 
 
     // VERIFY USER ACCOUNT IF EXIST
     // Check input formats
     // Check provided email if account exist
-    // Check if provided password matched
-    public CheckUserInput verifyAccountFirst(String email, String password) {
-        if (email.isEmpty() || password.isEmpty()) {
-            return new CheckUserInput(
+    // Proceed to next method for password match
+    public ResponseLayer verifyAccountFirst(String email, String password) {
+        if (password.isEmpty()) {
+            return new ResponseLayer(
                     false,
-                    "Empty email and / or password",
+                    "Empty password",
                     HttpStatus.LENGTH_REQUIRED);
         }
 
         Optional<UserEntity> checkUserEmail = userRepository.findByEmail(email);
 
         if (checkUserEmail.isEmpty()) {
-            return new CheckUserInput(
+            return new ResponseLayer(
                     false,
                     "Invalid email",
                     HttpStatus.BAD_REQUEST);
@@ -50,47 +53,50 @@ public class ForgetPasswordService {
 
     // CHECK PASSWORD IF MATCHED
     // Validate provided password against stored user password
-    // Returns true with user account instantiated
-    public CheckUserInput checkPassword(UserEntity user, String providedPassword) {
-        if (!isPasswordValid(user, providedPassword)) {
-            return new CheckUserInput(
+    // Returns true with user account INSTANTIATED; false otherwise
+    public ResponseLayer checkPassword(UserEntity user, String providedPassword) {
+        if (!passwordComparison.isPasswordValid(user, providedPassword)) {
+            return new ResponseLayer(
                     false,
                     "Invalid password",
                     HttpStatus.BAD_REQUEST);
         }
-        return new CheckUserInput(true, user);
-    }
-    private boolean isPasswordValid(UserEntity user, String providedPassword) {
-        String saltedPassword = user.getSalt() + providedPassword;
-        return passwordEncoder.matches(saltedPassword, user.getPassword());
+        return new ResponseLayer(true, user);
     }
 
 
     // VALIDATE USER INPUTS FIRST BEFORE RESET PASSWORD
-    // Check new provided password first if not empty
+    // Check new provided password first if not empty or same as previous
     // Save new password; Return false if SYSTEM error persist
-    public CheckUserInput resetPassword(UserEntity user, String newPassword) {
+    public ResponseLayer resetPassword(UserEntity user, String newPassword) {
         if (newPassword.isEmpty()) {
-            return new CheckUserInput(
+            return new ResponseLayer(
                     false,
-                    "Empty password",
+                    "Empty new password",
                     HttpStatus.LENGTH_REQUIRED);
         }
-
-            String saltedPassword = user.getSalt() + newPassword;
-            String hashedPassword = passwordEncoder.encode(saltedPassword);
-
-            Optional<UserEntity> updatedUser = userRepository.updatePassword(user, hashedPassword);
-
-            if (updatedUser.isPresent()) {
-                return new CheckUserInput(
-                        true,
-                        "Password reset successfully",
-                        HttpStatus.OK);
-            }
-            return new CheckUserInput(
+        if (passwordComparison.isPasswordValid(user, newPassword)) {
+            return new ResponseLayer(
                     false,
-                    "Password reset fail",
-                    HttpStatus.SERVICE_UNAVAILABLE);
+                    "Provided password is the same as previous",
+                    HttpStatus.BAD_REQUEST);
+        }
+
+        // Perform password hashing before saving
+        String saltedPassword = user.getSalt() + newPassword;
+        String hashedPassword = passwordEncoder.encode(saltedPassword);
+
+        Optional<UserEntity> passwordSaved = userRepository.updatePassword(user, hashedPassword);
+
+        if (passwordSaved.isPresent()) {
+            return new ResponseLayer(
+                    true,
+                    "Password reset successfully",
+                    HttpStatus.OK);
+        }
+        return new ResponseLayer(
+                false,
+                "Password reset fail",
+                HttpStatus.SERVICE_UNAVAILABLE);
     }
 }
