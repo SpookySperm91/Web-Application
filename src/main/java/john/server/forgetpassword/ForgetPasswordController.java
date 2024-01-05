@@ -2,7 +2,7 @@ package john.server.forgetpassword;
 
 import john.server.common.dto.ResponseLayer;
 import john.server.common.dto.DTOPassword;
-import john.server.common.dto.ResponseFormat;
+import john.server.common.dto.ResponseClient;
 import john.server.common.dto.ResponseType;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.owasp.encoder.Encode;
@@ -29,7 +29,7 @@ public class ForgetPasswordController {
     // Sanitize email and password from any malicious, check email format
     // Proceed to next method if user inputs pass cleanup check
     @PutMapping("/reset-password")
-    public ResponseEntity<ResponseFormat> ForgetPasswordUser(@RequestBody DTOPassword request) {
+    public ResponseEntity<ResponseClient> ForgetPasswordUser(@RequestBody DTOPassword request) {
         String sanitizedEmail = Encode.forHtml(request.getEmail());
         String sanitizedPassword = Encode.forHtml(request.getPassword());
 
@@ -38,7 +38,7 @@ public class ForgetPasswordController {
             HttpStatus status = HttpStatus.NOT_ACCEPTABLE;
 
             return ResponseEntity.status(status).body(
-                    new ResponseFormat(
+                    new ResponseClient(
                             ResponseType.RESET_PASSWORD_ERROR, message, status));
         }
         return validateAndResetPassword(sanitizedEmail, sanitizedPassword, request);
@@ -49,14 +49,14 @@ public class ForgetPasswordController {
     // Verify email and check password first
     // Proceed to reset password if validation is true
     // Return response
-    private ResponseEntity<ResponseFormat> validateAndResetPassword(String email, String password, DTOPassword request) {
+    private ResponseEntity<ResponseClient> validateAndResetPassword(String email, String password, DTOPassword request) {
         ResponseLayer validateAccount = forgetPasswordService.verifyAccountFirst(email, password);
 
         // Return as fail if validation is false
         if (!validateAccount.isSuccess()) {
             return ResponseEntity.status(validateAccount.getHttpStatus())
                     .body(
-                            new ResponseFormat(
+                            new ResponseClient(
                                     ResponseType.RESET_PASSWORD_ERROR,
                                     validateAccount.getMessage(),
                                     validateAccount.getHttpStatus()));
@@ -71,7 +71,7 @@ public class ForgetPasswordController {
 
             return ResponseEntity.status(changePassword.getHttpStatus())
                     .body(
-                            new ResponseFormat(
+                            new ResponseClient(
                                     ResponseType.RESET_PASSWORD_SUCCESS,
                                     username + " " + changePassword.getMessage(),
                                     changePassword.getHttpStatus()));
@@ -79,7 +79,7 @@ public class ForgetPasswordController {
         //Return as fail
         return ResponseEntity.status(changePassword.getHttpStatus())
                 .body(
-                        new ResponseFormat(
+                        new ResponseClient(
                                 ResponseType.RESET_PASSWORD_ERROR,
                                 changePassword.getMessage(),
                                 changePassword.getHttpStatus()));

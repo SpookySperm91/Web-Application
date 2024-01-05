@@ -1,7 +1,8 @@
-package john.server.signup;
+package john.server.register;
 
+import john.server.common.components.interfaces.PasswordStrength;
 import john.server.common.dto.ResponseLayer;
-import john.server.common.dto.ResponseFormat;
+import john.server.common.dto.ResponseClient;
 import john.server.common.dto.ResponseType;
 import john.server.common.dto.DTOUser;
 import org.owasp.encoder.Encode;
@@ -20,13 +21,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @RestController
-@RequestMapping("/api/signup")
-public class SignupController {
-    private final SignupService signupService;
+@RequestMapping("/api/register")
+public class RegisterController {
+    private final RegisterService signupService;
+    private final PasswordStrength passwordStrength;
 
     @Autowired
-    public SignupController(SignupService signupService) {
+    public RegisterController(RegisterService signupService, PasswordStrength passwordStrength) {
         this.signupService = signupService;
+        this.passwordStrength = passwordStrength;
     }
 
 
@@ -36,14 +39,14 @@ public class SignupController {
     // Proceed to create new account
     // Return response
     @PostMapping("/create-user")
-    public ResponseEntity<ResponseFormat> SignupUser(@Valid @RequestBody DTOUser request) {
+    public ResponseEntity<ResponseClient> SignupUser(@Valid @RequestBody DTOUser request) {
         String sanitizedEmail = Encode.forHtml(request.getEmail());
         String sanitizedUsername = Encode.forHtml(request.getUsername());
         String sanitizedPassword = Encode.forHtml(request.getPassword());
 
         ResponseLayer email = signupService.checkEmail(sanitizedEmail);
         ResponseLayer username = signupService.checkUsername(sanitizedUsername);
-        ResponseLayer password  = signupService.checkPassword(sanitizedPassword);
+        ResponseLayer password  = passwordStrength.checkPassword(sanitizedPassword);
 
         List<String> errorMessages = Stream.of(email.getMessage(), username.getMessage(), password.getMessage())
                 .filter(Objects::nonNull)
@@ -52,18 +55,18 @@ public class SignupController {
         if (!email.isSuccess() || !username.isSuccess() || !password.isSuccess()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(
-                            new ResponseFormat(ResponseType.SIGNUP_ERROR,
+                            new ResponseClient(ResponseType.SIGNUP_ERROR,
                                     "ERROR: " + String.join(", ", errorMessages),
                                     HttpStatus.BAD_REQUEST));
         }
 
-        ResponseLayer signupResponse = signupService.signupNewAccount(request, sanitizedPassword);
+        ResponseLayer signupResponse = signupService.signupNewAccount(sanitizedUsername, sanitizedEmail, sanitizedPassword);
 
         if (signupResponse.isSuccess()) {
             // Registration successful
             return ResponseEntity.status(signupResponse.getHttpStatus())
                     .body(
-                            new ResponseFormat(ResponseType.SIGNUP_SUCCESS,
+                            new ResponseClient(ResponseType.SIGNUP_SUCCESS,
                                     signupResponse.getMessage(),
                                     signupResponse.getHttpStatus())
                     );
@@ -71,7 +74,7 @@ public class SignupController {
             // Failed to register
             return ResponseEntity.status(signupResponse.getHttpStatus())
                     .body(
-                            new ResponseFormat(ResponseType.SIGNUP_ERROR,
+                            new ResponseClient(ResponseType.SIGNUP_ERROR,
                                     signupResponse.getMessage(),
                                     signupResponse.getHttpStatus())
                     );

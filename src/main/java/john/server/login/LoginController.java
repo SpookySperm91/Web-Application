@@ -2,7 +2,7 @@ package john.server.login;
 
 import john.server.common.dto.ResponseLayer;
 import john.server.common.dto.DTOUser;
-import john.server.common.dto.ResponseFormat;
+import john.server.common.dto.ResponseClient;
 import john.server.common.dto.ResponseType;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.owasp.encoder.Encode;
@@ -32,14 +32,14 @@ public class LoginController {
     // Authenticate user with the provided email and password
     // Return response
     @PostMapping("/login-user")
-    public ResponseEntity<ResponseFormat> LoginUser(@RequestBody DTOUser request) {
+    public ResponseEntity<ResponseClient> LoginUser(@RequestBody DTOUser request) {
         String sanitizedEmail = Encode.forHtml(request.getEmail());
         String sanitizedPassword = Encode.forHtml(request.getPassword());
 
         if (request.getEmail().isEmpty()){
             return ResponseEntity.status(HttpStatus.LENGTH_REQUIRED)
                     .body(
-                            new ResponseFormat(ResponseType.LOGIN_ERROR,
+                            new ResponseClient(ResponseType.LOGIN_ERROR,
                                     "Email input is empty",
                                     HttpStatus.LENGTH_REQUIRED));
         }
@@ -47,7 +47,7 @@ public class LoginController {
         if (!EmailValidator.getInstance().isValid(sanitizedEmail)) {
             return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
                     .body(
-                            new ResponseFormat(ResponseType.LOGIN_ERROR,
+                            new ResponseClient(ResponseType.LOGIN_ERROR,
                                     "Invalid email format",
                                     HttpStatus.NOT_ACCEPTABLE));
         }
@@ -57,14 +57,14 @@ public class LoginController {
         if (loginVerify.isSuccess()) {
             return ResponseEntity.status(loginVerify.getHttpStatus())
                     .body(
-                            new ResponseFormat(ResponseType.LOGIN_SUCCESS,
+                            new ResponseClient(ResponseType.LOGIN_SUCCESS,
                                     loginVerify.getMessage(),
                                     loginVerify.getHttpStatus()));
         }
 
         return ResponseEntity.status(loginVerify.getHttpStatus())
                 .body(
-                        new ResponseFormat(ResponseType.LOGIN_ERROR,
+                        new ResponseClient(ResponseType.LOGIN_ERROR,
                                 loginVerify.getMessage(),
                                 loginVerify.getHttpStatus()));
     }

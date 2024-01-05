@@ -1,4 +1,4 @@
-package john.server.signup;
+package john.server.register;
 
 import john.server.common.dto.DTOUser;
 import john.server.common.dto.ResponseLayer;
@@ -11,17 +11,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 
 @Service
-public class SignupService {
+public class RegisterService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
 
     @Autowired
-    public SignupService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
+    public RegisterService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
@@ -55,41 +52,6 @@ public class SignupService {
         return new ResponseLayer(true);
     }
 
-    // CHECK PROVIDED PASSWORD; Return response to the Controller
-    public ResponseLayer checkPassword(String password) {
-        if (password == null || password.isEmpty()) {
-            return new ResponseLayer(false, "Password is empty");
-        }
-        if (password.length() > 30) {
-            return new ResponseLayer(false, "Password exceeds maximum characters");
-        }
-        if (password.length() < 8) {
-            return new ResponseLayer(false, "Password is weak(tip: password length should be more than 8)");
-        }
-
-        boolean hasLower = false, hasUpper = false, hasDigit = false, specialChar = false;
-        Set<Character> set = new HashSet<>(
-                Arrays.asList('!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '+', '='));
-
-        for (char i : password.toCharArray()) {
-            if (Character.isLowerCase(i))
-                hasLower = true;
-            if (Character.isUpperCase(i))
-                hasUpper = true;
-            if (Character.isDigit(i))
-                hasDigit = true;
-            if (set.contains(i))
-                specialChar = true;
-        }
-
-        if (hasLower && hasUpper // Both case should true if no characters or numbers
-                || hasDigit || specialChar) {
-            return new ResponseLayer(true);
-        } else {
-            return new ResponseLayer(false, "Password is weak(tip: add special characters or numbers; *#$45)");
-        }
-    }
-
 
     // REGISTER NEW ACCOUNT
     // Hash the provided password first before saving
@@ -97,13 +59,13 @@ public class SignupService {
     // -- Password Hashing Procedure -- //
     // Generate a unique salt
     // Combine the salt and password (hashedPassword = salt + provided password)
-    // Hash the salted password
+    // Password is now hashed
     // ---------------------- //
 
     // Set Date for creation
     // Save the new account
     // Return response
-    public ResponseLayer signupNewAccount(DTOUser request, String password) {
+    public ResponseLayer signupNewAccount(String username, String email, String password) {
         try {
             String salt = BCrypt.gensalt(); // Generate a unique salt
 
@@ -113,9 +75,9 @@ public class SignupService {
             LocalDateTime DateCreated = LocalDateTime.now();
 
             userRepository.saveUserAccount
-                    (request.getUsername(),
+                            (username,
                             hashedPassword, salt,
-                            request.getEmail(),
+                            email,
                             DateCreated);
             return new ResponseLayer(true,
                     "Registration successful",

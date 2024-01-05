@@ -9,7 +9,7 @@ import org.springframework.http.HttpStatus;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ResponseFormat {
+public class ResponseClient {
     private ResponseType responseType;
     private String responseText;
     private HttpStatus httpStatus;

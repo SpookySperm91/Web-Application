@@ -1,6 +1,7 @@
 package john.server.forgetpassword;
 
 import john.server.common.components.interfaces.PasswordComparison;
+import john.server.common.components.interfaces.PasswordStrength;
 import john.server.common.dto.ResponseLayer;
 import john.server.repository_entity.UserEntity;
 import john.server.repository_entity.UserRepository;
@@ -17,13 +18,18 @@ public class ForgetPasswordService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final PasswordComparison passwordComparison;
+    private final PasswordStrength passwordStrength;
 
 
     @Autowired
-    public ForgetPasswordService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, PasswordComparison passwordComparison) {
+    public ForgetPasswordService(UserRepository userRepository,
+                                 BCryptPasswordEncoder passwordEncoder,
+                                 PasswordComparison passwordComparison,
+                                 PasswordStrength passwordStrength) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.passwordComparison = passwordComparison;
+        this.passwordStrength = passwordStrength;
     }
 
 
@@ -66,14 +72,13 @@ public class ForgetPasswordService {
 
 
     // VALIDATE USER INPUTS FIRST BEFORE RESET PASSWORD
-    // Check new provided password first if not empty or same as previous
+    // Check new provided password strength first or if same as previous
     // Save new password; Return false if SYSTEM error persist
     public ResponseLayer resetPassword(UserEntity user, String newPassword) {
-        if (newPassword.isEmpty()) {
-            return new ResponseLayer(
-                    false,
-                    "Empty new password",
-                    HttpStatus.LENGTH_REQUIRED);
+        ResponseLayer checkNewPassword = passwordStrength.checkPassword(newPassword);
+
+        if (!checkNewPassword.isSuccess()) {
+            return checkNewPassword;
         }
         if (passwordComparison.isPasswordValid(user, newPassword)) {
             return new ResponseLayer(
