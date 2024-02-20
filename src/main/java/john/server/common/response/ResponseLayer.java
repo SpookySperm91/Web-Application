@@ -1,6 +1,6 @@
-package john.server.common.dto;
+package john.server.common.response;
 
-import john.server.repository_entity.UserEntity;
+import john.server.repository.entity.user.UserEntity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,11 +27,12 @@ public class ResponseLayer {
         this.message = message;
     }
 
-    public ResponseLayer(Boolean success, UserEntity userEntity){
+    public ResponseLayer(Boolean success, UserEntity userEntity) {
         this.success = success;
         this.userEntity = userEntity;
     }
-    public ResponseLayer(Boolean success){
+
+    public ResponseLayer(Boolean success) {
         this.success = success;
     }
 

@@ -1,35 +1,42 @@
 package john.server.register;
 
-import john.server.common.components.interfaces.PasswordStrength;
-import john.server.common.dto.ResponseLayer;
-import john.server.common.dto.ResponseClient;
-import john.server.common.dto.ResponseType;
-import john.server.common.dto.DTOUser;
+import john.server.common.components.AccountLock;
+import john.server.common.components.PasswordStrength;
+import john.server.common.dto.UserDTO;
+import john.server.common.response.*;
+import john.server.register.token.LinkToken;
+import john.server.register.token.LinkTokenService;
 import org.owasp.encoder.Encode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/api/register")
 public class RegisterController {
-    private final RegisterService signupService;
+    private final RegisterService registerService;
     private final PasswordStrength passwordStrength;
+    private final LinkTokenService tokenService;
+    private final AccountLock accountLock;
+    private final ResponseTerminal terminal;
 
     @Autowired
-    public RegisterController(RegisterService signupService, PasswordStrength passwordStrength) {
-        this.signupService = signupService;
+    public RegisterController(RegisterService signupService,
+                              PasswordStrength passwordStrength,
+                              LinkTokenService tokenService, AccountLock accountLock, ResponseTerminal terminal) {
+        this.registerService = signupService;
         this.passwordStrength = passwordStrength;
+        this.tokenService = tokenService;
+        this.accountLock = accountLock;
+        this.terminal = terminal;
     }
 
 
@@ -39,45 +46,66 @@ public class RegisterController {
     // Proceed to create new account
     // Return response
     @PostMapping("/create-user")
-    public ResponseEntity<ResponseClient> SignupUser(@Valid @RequestBody DTOUser request) {
+    public ResponseEntity<ResponseClient> signupUser(@Valid @RequestBody UserDTO request) throws Exception {
         String sanitizedEmail = Encode.forHtml(request.getEmail());
         String sanitizedUsername = Encode.forHtml(request.getUsername());
         String sanitizedPassword = Encode.forHtml(request.getPassword());
 
-        ResponseLayer email = signupService.checkEmail(sanitizedEmail);
-        ResponseLayer username = signupService.checkUsername(sanitizedUsername);
-        ResponseLayer password  = passwordStrength.checkPassword(sanitizedPassword);
-
-        List<String> errorMessages = Stream.of(email.getMessage(), username.getMessage(), password.getMessage())
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        ResponseLayer email = registerService.checkEmail(sanitizedEmail);
+        ResponseLayer username = registerService.checkUsername(sanitizedUsername);
+        ResponseLayer password = passwordStrength.checkPassword(sanitizedPassword);
 
         if (!email.isSuccess() || !username.isSuccess() || !password.isSuccess()) {
+            List<String> errorMessages = Stream.of(email.getMessage(), username.getMessage(), password.getMessage())
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(
                             new ResponseClient(ResponseType.SIGNUP_ERROR,
-                                    "ERROR: " + String.join(", ", errorMessages),
-                                    HttpStatus.BAD_REQUEST));
+                                    "ERROR: " + String.join(", ", errorMessages)));
         }
 
-        ResponseLayer signupResponse = signupService.signupNewAccount(sanitizedUsername, sanitizedEmail, sanitizedPassword);
+
+        // Create token for email verification
+        ResponseLayer signupResponse = registerService.verificationProcess(sanitizedUsername, sanitizedEmail, sanitizedPassword);
 
         if (signupResponse.isSuccess()) {
-            // Registration successful
+            // Link sent
             return ResponseEntity.status(signupResponse.getHttpStatus())
                     .body(
-                            new ResponseClient(ResponseType.SIGNUP_SUCCESS,
-                                    signupResponse.getMessage(),
-                                    signupResponse.getHttpStatus())
-                    );
+                            new ResponseClient(ResponseType.SIGNUP_PENDING,
+                                    signupResponse.getMessage()));
         } else {
-            // Failed to register
-            return ResponseEntity.status(signupResponse.getHttpStatus())
+            // Email doesnt exist
+            throw new Exception("ERROR: Email does not exist");
+        }
+    }
+
+
+    // VERIFY ACCOUNT
+    // Check if link is expire or valid
+    // Enable locked account
+    // Delete the link
+    @GetMapping("/verify/{verification}")
+    public ResponseEntity<ResponseClient> verificationProcess(@PathVariable String verification) {
+        Optional<LinkToken> token = tokenService.getVerificationLink(verification);
+
+        if (token.isPresent()) {
+            accountLock.enableAccount(token.get());
+            tokenService.deleteVerificationLink(token.get());
+
+            terminal.success(ResponseType.VERIFICATION_SUCCESS);
+            return ResponseEntity.status(HttpStatus.ACCEPTED)
                     .body(
-                            new ResponseClient(ResponseType.SIGNUP_ERROR,
-                                    signupResponse.getMessage(),
-                                    signupResponse.getHttpStatus())
-                    );
+                            new ResponseClient(ResponseType.VERIFICATION_SUCCESS,
+                                    "SUCCESS: Verification complete"));
+        } else {
+            terminal.status(ResponseType.LINK_EXPIRED);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(
+                            new ResponseClient(ResponseType.VERIFICATION_ERROR,
+                                    "FAILED: Verification fail. Token is invalid or expired"));
         }
     }
 }

@@ -1,8 +1,14 @@
 package john.server.register;
 
-import john.server.common.dto.DTOUser;
-import john.server.common.dto.ResponseLayer;
-import john.server.repository_entity.UserRepository;
+import john.server.common.components.VerificationLink;
+import john.server.common.components.email.EmailService;
+import john.server.common.components.email.TransactionType;
+import john.server.common.response.ResponseLayer;
+import john.server.common.response.ResponseTerminal;
+import john.server.common.response.ResponseType;
+import john.server.register.token.LinkToken;
+import john.server.repository.entity.user.UserEntity;
+import john.server.repository.entity.user.UserRepository;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,11 +22,21 @@ import java.time.LocalDateTime;
 public class RegisterService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final VerificationLink verification;
+    private final EmailService emailService;
+    private final ResponseTerminal terminal;
+
 
     @Autowired
-    public RegisterService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
+    public RegisterService(UserRepository userRepository,
+                           BCryptPasswordEncoder passwordEncoder,
+                           john.server.common.components.VerificationLink verification,
+                           EmailService emailService, ResponseTerminal terminal) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.verification = verification;
+        this.emailService = emailService;
+        this.terminal = terminal;
     }
 
 
@@ -54,6 +70,30 @@ public class RegisterService {
 
 
     // REGISTER NEW ACCOUNT
+    // Generate pending user and verification token
+    // Generate verification link and send the user email
+    public ResponseLayer verificationProcess(String username, String email, String password) {
+        // Generate pending user
+        UserEntity pendingUser = userRepository.generateUserID();
+        userRepository.save(pendingUser);  // Save the UserEntity to the database
+
+        LinkToken tokenID = new LinkToken(pendingUser.getId());
+        verification.generateToken(tokenID);
+
+        // Generate link
+        String link = verification.generateLink(tokenID.getToken());
+
+        // Sent email. Transaction type as REGISTER
+        if (emailService.sendEmail(username, email, link, TransactionType.REGISTER)) {
+            return savePendingAccount(pendingUser, username, email, password);
+        } else {
+            verification.evictToken(tokenID);
+            userRepository.deleteById(pendingUser.getId());
+            return new ResponseLayer(false);
+        }
+    }
+
+    // SAVE USER ACCOUNT
     // Hash the provided password first before saving
 
     // -- Password Hashing Procedure -- //
@@ -63,26 +103,27 @@ public class RegisterService {
     // ---------------------- //
 
     // Set Date for creation
-    // Save the new account
+    // Save the new account (with the instance id)
     // Return response
-    public ResponseLayer signupNewAccount(String username, String email, String password) {
+    private ResponseLayer savePendingAccount(UserEntity pendingUser, String username, String email, String password) {
         try {
             String salt = BCrypt.gensalt(); // Generate a unique salt
+            String hashedPassword = passwordEncoder.encode(salt + password);
+            LocalDateTime dateCreated = LocalDateTime.now();
 
-            String saltedPassword = salt + password;
-            String hashedPassword = passwordEncoder.encode(saltedPassword);
+            // Save data
+            pendingUser.setUsername(username);
+            pendingUser.setEmail(email);
+            pendingUser.setPassword(hashedPassword);
+            pendingUser.setSalt(salt);
+            pendingUser.setAccountDateCreated(dateCreated);
+            pendingUser.setEnabled(false); // Account is locked
+            userRepository.saveUserAccount(pendingUser);
 
-            LocalDateTime DateCreated = LocalDateTime.now();
-
-            userRepository.saveUserAccount
-                            (username,
-                            hashedPassword, salt,
-                            email,
-                            DateCreated);
+            terminal.success(ResponseType.SIGNUP_SUCCESS);
             return new ResponseLayer(true,
-                    "Registration successful",
-                    HttpStatus.OK);
-
+                    "Registration successful. Proceed to email verification"
+                    , HttpStatus.CREATED);
 
         } catch (Exception e) {
             return new ResponseLayer(false,
@@ -91,3 +132,5 @@ public class RegisterService {
         }
     }
 }
+
+

@@ -1,7 +1,9 @@
-package john.server.repository_entity;
+package john.server.repository.entity.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.*;
+import john.server.register.token.LinkToken;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -9,7 +11,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
 
 @Document(collection = "user-account-data")
-@NoArgsConstructor
 @AllArgsConstructor
 @Data
 public class UserEntity {
@@ -17,10 +18,25 @@ public class UserEntity {
     @JsonIgnore
     private ObjectId id;
     private String username;
+    private String email;
     @JsonIgnore
     private String password;
     @JsonIgnore
     private String salt;
-    private String email;
+    @JsonIgnore
     private LocalDateTime accountDateCreated;
+    @JsonIgnore
+    private boolean enabled;
+    @JsonIgnore
+    private boolean logged;
+    @JsonIgnore
+    private LinkToken token;
+
+
+    public UserEntity() {
+        this.enabled = false;
+        this.logged = false;
+    }
 }
+
+

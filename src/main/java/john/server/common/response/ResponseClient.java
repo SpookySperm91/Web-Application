@@ -1,4 +1,4 @@
-package john.server.common.dto;
+package john.server.common.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,8 +12,9 @@ import org.springframework.http.HttpStatus;
 public class ResponseClient {
     private ResponseType responseType;
     private String responseText;
-    private HttpStatus httpStatus;
 }
+
+
 
 
 

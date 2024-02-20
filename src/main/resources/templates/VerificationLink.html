@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Verification Link</title>
+</head>
+
+<body>
+<h1 th:text="${username}">Hello ${username}</h1>
+<h2>Thank you for registering!</h2>
+<h2>To complete registration, click <a th:href="${body}" class="verify-link">VERIFY</a></h2>
+</body>
+</html>
+
+
+

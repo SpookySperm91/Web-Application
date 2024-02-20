@@ -1,7 +1,6 @@
 package john.server.common.components;
 
-import john.server.common.components.interfaces.PasswordComparison;
-import john.server.repository_entity.UserEntity;
+import john.server.repository.entity.user.UserEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -9,11 +8,11 @@ import org.springframework.stereotype.Component;
 
 // PERFORM SECURE PASSWORD COMPARISON
 @Component
-public class PasswordComparisonImpl implements PasswordComparison {
+public class PasswordComparison {
     private final BCryptPasswordEncoder passwordEncoder;
 
     @Autowired
-    public PasswordComparisonImpl(BCryptPasswordEncoder passwordEncoder) {
+    public PasswordComparison(BCryptPasswordEncoder passwordEncoder) {
         this.passwordEncoder = passwordEncoder;
     }
 

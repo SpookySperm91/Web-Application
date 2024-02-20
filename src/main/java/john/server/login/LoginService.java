@@ -1,9 +1,9 @@
 package john.server.login;
 
-import john.server.common.components.interfaces.PasswordComparison;
-import john.server.common.dto.ResponseLayer;
-import john.server.repository_entity.UserEntity;
-import john.server.repository_entity.UserRepository;
+import john.server.common.components.PasswordComparison;
+import john.server.common.response.ResponseLayer;
+import john.server.repository.entity.user.UserEntity;
+import john.server.repository.entity.user.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +33,15 @@ public class LoginService {
         if (!passwordComparison.isPasswordValid(userExist.get(), password)) {
             return new ResponseLayer(false, "Invalid Email or Password", HttpStatus.BAD_REQUEST);
         }
+
+        // Account Locked
+        if(!userExist.get().isEnabled()) {
+            return new ResponseLayer(false, "Account is Locked", HttpStatus.BAD_REQUEST);
+        }
+
+        // Set account login true
+        userExist.get().setLogged(true);
+        userRepository.save(userExist.get());
         return new ResponseLayer(true, "Login Success", HttpStatus.OK);
     }
 }

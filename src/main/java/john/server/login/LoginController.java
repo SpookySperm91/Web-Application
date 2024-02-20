@@ -1,9 +1,9 @@
 package john.server.login;
 
-import john.server.common.dto.ResponseLayer;
-import john.server.common.dto.DTOUser;
-import john.server.common.dto.ResponseClient;
-import john.server.common.dto.ResponseType;
+import john.server.common.response.ResponseLayer;
+import john.server.common.dto.UserDTO;
+import john.server.common.response.ResponseClient;
+import john.server.common.response.ResponseType;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.owasp.encoder.Encode;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +32,7 @@ public class LoginController {
     // Authenticate user with the provided email and password
     // Return response
     @PostMapping("/login-user")
-    public ResponseEntity<ResponseClient> LoginUser(@RequestBody DTOUser request) {
+    public ResponseEntity<ResponseClient> LoginUser(@RequestBody UserDTO request) {
         String sanitizedEmail = Encode.forHtml(request.getEmail());
         String sanitizedPassword = Encode.forHtml(request.getPassword());
 
@@ -40,16 +40,14 @@ public class LoginController {
             return ResponseEntity.status(HttpStatus.LENGTH_REQUIRED)
                     .body(
                             new ResponseClient(ResponseType.LOGIN_ERROR,
-                                    "Email input is empty",
-                                    HttpStatus.LENGTH_REQUIRED));
+                                    "Email input is empty"));
         }
 
         if (!EmailValidator.getInstance().isValid(sanitizedEmail)) {
             return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
                     .body(
                             new ResponseClient(ResponseType.LOGIN_ERROR,
-                                    "Invalid email format",
-                                    HttpStatus.NOT_ACCEPTABLE));
+                                    "Invalid email format"));
         }
 
         ResponseLayer loginVerify = loginService.authenticateUser(sanitizedEmail, sanitizedPassword);
@@ -58,14 +56,12 @@ public class LoginController {
             return ResponseEntity.status(loginVerify.getHttpStatus())
                     .body(
                             new ResponseClient(ResponseType.LOGIN_SUCCESS,
-                                    loginVerify.getMessage(),
-                                    loginVerify.getHttpStatus()));
+                                    loginVerify.getMessage()));
         }
 
         return ResponseEntity.status(loginVerify.getHttpStatus())
                 .body(
                         new ResponseClient(ResponseType.LOGIN_ERROR,
-                                loginVerify.getMessage(),
-                                loginVerify.getHttpStatus()));
+                                loginVerify.getMessage()));
     }
 }

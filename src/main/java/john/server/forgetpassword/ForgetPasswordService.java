@@ -1,10 +1,16 @@
 package john.server.forgetpassword;
 
-import john.server.common.components.interfaces.PasswordComparison;
-import john.server.common.components.interfaces.PasswordStrength;
-import john.server.common.dto.ResponseLayer;
-import john.server.repository_entity.UserEntity;
-import john.server.repository_entity.UserRepository;
+import john.server.common.components.PasswordComparison;
+import john.server.common.components.PasswordStrength;
+import john.server.common.components.VerificationCode;
+import john.server.common.components.email.EmailService;
+import john.server.common.components.email.TransactionType;
+import john.server.common.response.ResponseLayer;
+import john.server.common.response.ResponseTerminal;
+import john.server.common.response.ResponseType;
+import john.server.forgetpassword.token.CodeToken;
+import john.server.repository.entity.user.UserEntity;
+import john.server.repository.entity.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -19,17 +25,23 @@ public class ForgetPasswordService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final PasswordComparison passwordComparison;
     private final PasswordStrength passwordStrength;
+    private final VerificationCode verification;
+    private final EmailService email;
+    private final ResponseTerminal terminal;
 
 
     @Autowired
     public ForgetPasswordService(UserRepository userRepository,
                                  BCryptPasswordEncoder passwordEncoder,
                                  PasswordComparison passwordComparison,
-                                 PasswordStrength passwordStrength) {
+                                 PasswordStrength passwordStrength, VerificationCode verification, EmailService email, ResponseTerminal terminal) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.passwordComparison = passwordComparison;
         this.passwordStrength = passwordStrength;
+        this.verification = verification;
+        this.email = email;
+        this.terminal = terminal;
     }
 
 
@@ -37,24 +49,63 @@ public class ForgetPasswordService {
     // Check input formats
     // Check provided email if account exist
     // Proceed to next method for password match
-    public ResponseLayer verifyAccountFirst(String email, String password) {
-        if (password.isEmpty()) {
-            return new ResponseLayer(
-                    false,
-                    "Empty password",
-                    HttpStatus.LENGTH_REQUIRED);
-        }
-
+    public ResponseLayer verifyAccountFirst(String email) {
         Optional<UserEntity> checkUserEmail = userRepository.findByEmail(email);
 
         if (checkUserEmail.isEmpty()) {
             return new ResponseLayer(
-                    false,
-                    "Invalid email",
-                    HttpStatus.BAD_REQUEST);
+                    false, "Invalid email", HttpStatus.NOT_FOUND);
         }
-        return checkPassword(checkUserEmail.get(), password);
+
+        if (!checkUserEmail.get().isEnabled()) {
+            return new ResponseLayer(
+                    false, "Account is locked", HttpStatus.BAD_REQUEST);
+        }
+        verificationCode(checkUserEmail.get());
+        terminal.status(ResponseType.ACCOUNT_EXIST);
+        return new ResponseLayer(true, "Account exist", checkUserEmail.get(), HttpStatus.CONTINUE);
     }
+
+    // VERIFICATION CODE PROCESS
+    // Generate verification code
+    // Send via user's email
+    private void verificationCode(UserEntity user) {
+        CodeToken token = new CodeToken(user.getId());
+        verification.generateVerificationCode(token);
+
+        email.sendEmail(user.getUsername(), user.getEmail(),
+                token.getVerificationCode(), TransactionType.RESET_PASSWORD);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     // CHECK PASSWORD IF MATCHED
@@ -63,11 +114,13 @@ public class ForgetPasswordService {
     public ResponseLayer checkPassword(UserEntity user, String providedPassword) {
         if (!passwordComparison.isPasswordValid(user, providedPassword)) {
             return new ResponseLayer(
-                    false,
-                    "Invalid password",
-                    HttpStatus.BAD_REQUEST);
+                    false, "Invalid password", HttpStatus.BAD_REQUEST);
         }
         return new ResponseLayer(true, user);
+    }
+
+    public void sentVerificationCode() {
+
     }
 
 
@@ -82,9 +135,7 @@ public class ForgetPasswordService {
         }
         if (passwordComparison.isPasswordValid(user, newPassword)) {
             return new ResponseLayer(
-                    false,
-                    "Provided password is the same as previous",
-                    HttpStatus.BAD_REQUEST);
+                    false, "Provided password is the same as previous", HttpStatus.BAD_REQUEST);
         }
 
         // Perform password hashing before saving
@@ -95,13 +146,9 @@ public class ForgetPasswordService {
 
         if (passwordSaved.isPresent()) {
             return new ResponseLayer(
-                    true,
-                    "Password reset successfully",
-                    HttpStatus.OK);
+                    true, "Password reset successfully", HttpStatus.OK);
         }
         return new ResponseLayer(
-                false,
-                "Password reset fail",
-                HttpStatus.SERVICE_UNAVAILABLE);
+                false, "Password reset fail", HttpStatus.SERVICE_UNAVAILABLE);
     }
 }

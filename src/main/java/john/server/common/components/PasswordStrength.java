@@ -1,7 +1,6 @@
 package john.server.common.components;
 
-import john.server.common.components.interfaces.PasswordStrength;
-import john.server.common.dto.ResponseLayer;
+import john.server.common.response.ResponseLayer;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
@@ -11,8 +10,7 @@ import java.util.Set;
 
 // CHECK PROVIDED PASSWORD; Return response to the Controller
 @Component
-public class PasswordStrengthImpl implements PasswordStrength {
-
+public class PasswordStrength {
 
     public ResponseLayer checkPassword(String password) {
         if (password == null || password.isEmpty()) {

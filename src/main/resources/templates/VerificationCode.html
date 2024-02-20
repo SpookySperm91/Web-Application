@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Verification Code</title>
+</head>
+
+<body>
+<h1>Hello <span th:text="${username}">${username}</span></h1>
+<h2>You are resetting your password</h2>
+<h2>Here is the verification code, <span th:text="${body}">${verificationCode}</span></h2>
+<p>Please note that the verification code will expire after a certain period.</p>
+</body>
+</html>
