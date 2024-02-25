@@ -36,21 +36,14 @@ public class CodeTokenService {
         tokenRepository.delete(token);
     }
 
-    public String getVerificationCodeById(ObjectId id) {
-        return tokenRepository.findById(id).get().getVerificationCode();
-    }
-
-    // RETRIEVE TOKEN
-    public Optional<CodeToken> getVerificationCode(String token) {
-        return tokenRepository.findByVerificationCode(token).map(this::handleExpiration);
-    }
-
-    private CodeToken handleExpiration(CodeToken token) {
+    // HANDLES EXPIRATION
+    public CodeToken handleExpiration(CodeToken token) {
         LocalDateTime now = LocalDateTime.now();
 
         boolean isExpired = now.isAfter(token.getExpireAt());
         if (isExpired) {
             deleteVerificationCode(token);
+
             log.status(ResponseType.VERIFICATION_CODE_EXPIRED);
             return null; // Returning null to indicate expiration
         }
