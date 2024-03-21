@@ -20,8 +20,8 @@ public class AccountLock {
 
 
     // ENABLE ACCOUNT
-    public void enableAccount(LinkToken token) {
-        repository.findById(token.getId())
+    public void enableAccount(LinkToken user) {
+        repository.findById(user.getId())
                 .ifPresent(userEntity -> {
                     repository.enableAccount(userEntity);
                     log.status(ResponseType.ACCOUNT_VALID);

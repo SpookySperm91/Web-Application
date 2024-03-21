@@ -1,0 +1,77 @@
+DOCUMENTATION
+
+(pkg.): package
+(inf.): interface
+(prt.): non-public
+
+-------- DIRECTORY MAP --------
+Common
+    pkg.components
+    pkg.config
+    pkg.dto
+    pkg.response
+
+Forget-password
+    pkg.token
+    prt.forget-password controller
+    prt.forget-password service
+
+Login
+    prt.login controller
+    prt.login service
+
+Register
+    pkg.token
+    prt.register controller
+    prt.register service
+
+Repository.Entity.user
+    inf.user-custom repository
+    inf.user repository
+    user-custom repository-impl
+    user entity
+
+Session
+    session service
+-------------------------------
+
+(enm.): enum
+
+------- DIRECTORY MAP of Common-------
+pkg.components:     (class: 7, enum: 1, package: 1)
+pkg.config:         (class: 4)
+pkg.dto:            (class: 3)
+pkg.response:       (class: 3, enum: 1)
+               total class: 17, enum: 2, package: 1
+
+Common:
+   pkg.components
+     * accountLock
+     * passwordComparison
+     * passwordStrength
+     * verificationCode
+     * verificationLink
+       pkg.email
+         * emailService
+         * processEmailGenerator
+         * enm.transactionType
+
+
+   pkg.config
+     * cacheConfig
+     * redisConfiguration
+     * redisSessionConfig
+     * securityConfig
+
+
+   pkg.dto
+     * passwordDTO
+     * userDTO
+     * verificationCodeDTO
+
+
+   pkg.response
+     * responseClient
+     * responseLayer
+     * responseTerminal
+     * enm.responseType

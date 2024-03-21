@@ -27,7 +27,7 @@ public class ResponseTerminal {
             case LOGIN_ERROR -> ("LOGIN SERVICE STATUS: ERROR, Login fail.");
             case SIGNUP_ERROR -> ("SIGNUP SERVICE STATUS: ERROR, Signup fail.");
             case RESET_PASSWORD_ERROR -> ("RESET PASSWORD SERVICE STATUS: ERROR, Password reset fail.");
-            case VERIFICATION_ERROR -> ("VERIFICATION SERVICE STATUS: ERROR, Verification successful.");
+            case VERIFICATION_ERROR -> ("VERIFICATION SERVICE STATUS: ERROR, Verification fail.");
             default -> throw new IllegalArgumentException("Unexpected response type: " + type);
         });
     }

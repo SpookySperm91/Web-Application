@@ -35,12 +35,6 @@ public class VerificationLink {
     }
 
 
-    // @CacheEvict(key = "#evictToken.token")
-    public void evictToken(LinkToken evictToken) {
-        tokenService.deleteVerificationLink(evictToken);
-    }
-
-
     // GENERATE LINK
     public String generateLink(String token) {
         String baseUrl = "http://localhost:8080/";

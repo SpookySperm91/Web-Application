@@ -17,7 +17,6 @@ import java.time.LocalDateTime;
 @Data
 public class CodeToken implements Serializable {
     @Id
-
     @JsonIgnore
     private ObjectId id;
     @JsonIgnore

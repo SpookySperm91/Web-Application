@@ -1,0 +1,211 @@
+DOCUMENTATION of 'COMMON' package
+
+----- component -----
+
+pkg.email:
+
+  * EmailService
+        public void sendEmail(String username, String userEmail, String body, TransactionType type)
+            Parameter:
+                'username' (String): Recipient's username.
+                'userEmail' (String): Recipient's email address.
+                'body' (String): Content of the email.
+                'type' (TransactionType): Type of transaction for formatting the email.
+            Returns: void
+
+        Function
+        - send an email to a user.
+
+        Example:
+        EmailService emailService = new EmailService();
+        emailService.sendEmail("John", "john@example.com", "Hello, John!", TransactionType.WELCOME);
+
+
+* AccountLock
+        public void enableAccount(LinkToken user)
+            Parameter:
+                'user' (LinkToken): The user token containing the user ID.
+            Returns: void
+
+            Function
+            - enables the account associated with the provided user token.
+            - finds the user entity using the provided user token ID.
+            - if the user entity is found, enables the account associated with it.
+            Note:
+            - This method enables the account only if the user entity is found in the repository.
+
+            Example:
+            AccountLock accountLock = new AccountLock();
+            accountLock.enableAccount(userToken);
+
+
+* PasswordComparison
+        public boolean isPasswordValid(UserEntity user, String providedPassword)
+            Parameter:
+                'user' (UserEntity): User account
+                'providedPassword (String): Provided password by the user
+            Return: boolean
+
+            Function
+            - validate if provided password is the same as the existing password
+            - return false if inputs are empty
+
+            Example:
+            PasswordComparison passwordComparison = new PasswordComparison();
+            boolean isValid = passwordComparison.isPasswordValid(userEntity, "password123");
+
+
+* PasswordStrength
+        public ResponseLayer checkPassword(String password)
+            Parameter:
+                'password' (String): Provided password
+            Return: ResponseEntity
+
+            Function
+            - check if the provided password is strong
+
+            Example:
+            PasswordStrength passwordStrength = new PasswordStrength();
+            ResponseLayer password = passwordStrength.checkPassword("password12345");
+
+
+* VerificationCode
+        public void generateVerificationCode(CodeToken verificationToken)
+            Parameter:
+                'verificationToken' (CodeToken): CodeToken instance
+            Return: void
+
+            Function
+            - generate verification code with the provided 'CodeToken' object
+            - save the instance in the database
+            - provided object is now updated with the generated credentials
+
+            Example:
+            CodeToken code = new CodeToken();
+            VerificationCode verification = new VerificationCode();
+            verification.generateVerificationCode(code);
+
+
+* VerificationLink
+        public void generateToken(LinkToken pendingToken)
+            Parameter:
+                'pendingToken' (LinkToken): LinkToken instance
+            Return: void
+
+            Function
+            - generate verification link with the provided 'LinkToken' object
+            - save the instance in the database
+            - provided object is now updated with the generated credentials
+
+            Example:
+            LinkToken token = new LinkToken();
+            VerificationLink verification = new VerificationLink();
+            verification.generateToken(token);
+
+----------------------------------------------------------------------
+
+
+
+----- response -----
+
+class ResponseClient
+    responseType (ResponseType): type of response
+    responseText (String) : text message of response
+
+    Purpose
+    - response format
+    - response back to the client
+
+    Note:
+    - Mainly used in Controller layer, or classes that return the response directly to the client.
+    - Most 'responseText' use cases are overwritten with 'ResponseLayer.getMessage()' if available.
+
+    Example
+    new ResponseClient(responseType.VERIFICATION_SUCCESS, "Verification Success");
+    new ResponseClient(responseType.VERIFICATION_ERROR, ResponseLayer.getMessage());
+
+
+class ResponseLayer
+    success (boolean): boolean status
+    message (String): text message of the status
+    userEntity (UserEntity): UserEntity instance if necessary
+    httpStatus (HttpStatus): HTTP response
+
+    Purpose
+    - response format used for business layer
+    - response back to the controller
+
+    Note:
+    - There are 4 possible use cases:
+        ResponseLayer(Boolean success, String message, HttpStatus httpStatus)
+        ResponseLayer(Boolean success, String message)
+        ResponseLayer(Boolean success, UserEntity userEntity)
+        ResponseLayer(Boolean success, String message, UserEntity user, HttpStatus httpStatus)
+
+    Example
+    new ResponseLayer(true, "Reset Password Success", httpStatus.OK);
+    new ResponseLayer(false, "Weak Password");
+    new ResponseLayer(true, user);
+    new ResponseLayer(true, "Verification code is sent", user, httpStatus.OK);
+
+
+class ResponseTerminal
+    void success(ResponseType type)
+    void fail(ResponseType type)
+    void status(ResponseType type)
+
+    Purpose
+    - Custom system status
+    - Provides system status in the terminal
+    - Use Enum variables when instantiating
+
+    Example
+    ResponseTerminal log = new ResponseTerminal();
+    log.success(ResponseType.SIGNUP_SUCCESS);
+    log.fail(ResponseType.LOGIN_FAIL);
+    log.status(ResponseType.SIGNUP_PENDING);
+
+
+enum ResponseType
+    Purpose
+    - Immutable variables use on many occasions
+
+----------------------------------------------------------------------
+
+
+
+----- dto -----
+
+DTO (Data Transfer Object)
+Mainly used for mapping JSON request data into native variables allowing the system to read the request.
+
+Scenario case:
+|-----Client request-----|
+JSON:
+    {
+    username: "John Wick",
+    email: "johnwick@example.com",
+    password: "Boogeyman"
+    }
+|------------------------|
+           | |
+          \   /
+           \ /
+|------------------------|
+UserDTO(String username, String email, String password) {
+    this.username = username;
+    this.email = email;
+    this.password = password;
+}
+|------------------------|
+
+Note:
+- Empty data will mapped into null value by default.
+- DTO behavior are not inherent. Should be customize externally if specific handling is desired.
+    Example:
+    - Anoint with '@NotEmpty' or '@NotBlank' inside the parameter along the dto
+      Example usage:
+      public String login(@NotEmpty UserDto request)
+    - This enforce constraints on DTO fields, ensuring that they are not empty or null.
+
+----------------------------------------------------------------------

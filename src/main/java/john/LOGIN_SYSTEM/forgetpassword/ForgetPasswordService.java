@@ -85,7 +85,7 @@ class ForgetPasswordService {
     }
 
     // Generate verification code
-    public CodeToken verificationCode(UserEntity user) {
+    private CodeToken verificationCode(UserEntity user) {
         CodeToken token = new CodeToken(user.getId());
         verification.generateVerificationCode(token);
         return token;
