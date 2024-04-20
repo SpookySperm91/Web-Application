@@ -1,6 +1,6 @@
 package john.LOGIN_SYSTEM.common.components;
 
-import john.LOGIN_SYSTEM.repository.entity.user.UserEntity;
+import john.LOGIN_SYSTEM.persistenceMongodb.user.UserEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;

@@ -1,4 +1,4 @@
-package john.LOGIN_SYSTEM.repository.entity.user;
+package john.LOGIN_SYSTEM.persistenceMongodb.user;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;

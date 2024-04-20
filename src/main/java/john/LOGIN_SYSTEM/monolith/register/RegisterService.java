@@ -1,4 +1,4 @@
-package john.LOGIN_SYSTEM.register;
+package john.LOGIN_SYSTEM.monolith.register;
 
 import john.LOGIN_SYSTEM.common.components.VerificationLink;
 import john.LOGIN_SYSTEM.common.components.email.EmailService;
@@ -6,9 +6,9 @@ import john.LOGIN_SYSTEM.common.components.email.TransactionType;
 import john.LOGIN_SYSTEM.common.response.ResponseLayer;
 import john.LOGIN_SYSTEM.common.response.ResponseTerminal;
 import john.LOGIN_SYSTEM.common.response.ResponseType;
-import john.LOGIN_SYSTEM.register.token.LinkToken;
-import john.LOGIN_SYSTEM.repository.entity.user.UserEntity;
-import john.LOGIN_SYSTEM.repository.entity.user.UserRepository;
+import john.LOGIN_SYSTEM.persistenceMongodb.token.verificationLink.LinkToken;
+import john.LOGIN_SYSTEM.persistenceMongodb.user.UserEntity;
+import john.LOGIN_SYSTEM.persistenceMongodb.user.UserRepository;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -30,8 +30,9 @@ class RegisterService {
     @Autowired
     public RegisterService(UserRepository userRepository,
                            BCryptPasswordEncoder passwordEncoder,
-                           john.LOGIN_SYSTEM.common.components.VerificationLink verification,
-                           EmailService emailService, ResponseTerminal terminal) {
+                           VerificationLink verification,
+                           EmailService emailService,
+                           ResponseTerminal terminal) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.verification = verification;

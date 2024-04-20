@@ -1,10 +1,10 @@
-package john.LOGIN_SYSTEM.register;
+package john.LOGIN_SYSTEM.monolith.register;
 
 import john.LOGIN_SYSTEM.common.components.AccountLock;
 import john.LOGIN_SYSTEM.common.components.PasswordStrength;
 import john.LOGIN_SYSTEM.common.dto.UserDTO;
 import john.LOGIN_SYSTEM.common.response.*;
-import john.LOGIN_SYSTEM.register.token.LinkTokenService;
+import john.LOGIN_SYSTEM.persistenceMongodb.token.verificationLink.LinkTokenService;
 import org.owasp.encoder.Encode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
@@ -32,7 +32,8 @@ class RegisterController {
     @Autowired
     public RegisterController(RegisterService signupService,
                               PasswordStrength passwordStrength,
-                              LinkTokenService tokenService, AccountLock accountLock) {
+                              LinkTokenService tokenService,
+                              AccountLock accountLock) {
         this.serviceLayer = signupService;
         this.passwordStrength = passwordStrength;
         this.tokenService = tokenService;

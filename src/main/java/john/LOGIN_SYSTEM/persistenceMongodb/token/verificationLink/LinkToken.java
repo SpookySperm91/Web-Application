@@ -1,4 +1,4 @@
-package john.LOGIN_SYSTEM.forgetpassword.token;
+package john.LOGIN_SYSTEM.persistenceMongodb.token.verificationLink;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
@@ -11,18 +11,21 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
-@Document(collection = "verification-code")
+@Document(collection = "verification-link")
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class CodeToken implements Serializable {
+public class LinkToken implements Serializable {
     @Id
     @JsonIgnore
     private ObjectId id;
     @JsonIgnore
-    private String verificationCode;
+    private String token;
     private LocalDateTime createAt;
     private LocalDateTime expireAt;
+    private LocalDateTime confirmedAt;
 
-    public CodeToken(ObjectId id) { this.id = id; }
+    public LinkToken(ObjectId id) {
+        this.id = id;
+    }
 }

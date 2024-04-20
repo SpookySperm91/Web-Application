@@ -1,7 +1,7 @@
 package john.LOGIN_SYSTEM.common.components;
 
-import john.LOGIN_SYSTEM.register.token.LinkTokenService;
-import john.LOGIN_SYSTEM.register.token.LinkToken;
+import john.LOGIN_SYSTEM.persistenceMongodb.token.verificationLink.LinkTokenService;
+import john.LOGIN_SYSTEM.persistenceMongodb.token.verificationLink.LinkToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

@@ -1,7 +1,7 @@
-package john.LOGIN_SYSTEM.repository.entity.user;
+package john.LOGIN_SYSTEM.persistenceMongodb.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import john.LOGIN_SYSTEM.register.token.LinkToken;
+import john.LOGIN_SYSTEM.persistenceMongodb.token.verificationLink.LinkToken;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.bson.types.ObjectId;

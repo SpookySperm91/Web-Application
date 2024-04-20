@@ -1,4 +1,4 @@
-package john.LOGIN_SYSTEM.repository.entity.user;
+package john.LOGIN_SYSTEM.persistenceMongodb.user;
 
 import org.springframework.stereotype.Repository;
 
@@ -16,5 +16,6 @@ public interface UserCustomRepository {
 
 
     void enableAccount(UserEntity user);
+
 }
 

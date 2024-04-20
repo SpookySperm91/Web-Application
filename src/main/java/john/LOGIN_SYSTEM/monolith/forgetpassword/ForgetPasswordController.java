@@ -1,4 +1,4 @@
-package john.LOGIN_SYSTEM.forgetpassword;
+package john.LOGIN_SYSTEM.monolith.forgetpassword;
 
 import jakarta.servlet.http.HttpSession;
 import john.LOGIN_SYSTEM.common.dto.PasswordDTO;

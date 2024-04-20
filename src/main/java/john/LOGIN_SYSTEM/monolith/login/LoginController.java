@@ -1,4 +1,4 @@
-package john.LOGIN_SYSTEM.login;
+package john.LOGIN_SYSTEM.monolith.login;
 
 import jakarta.servlet.http.HttpSession;
 import john.LOGIN_SYSTEM.common.dto.UserDTO;

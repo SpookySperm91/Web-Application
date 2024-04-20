@@ -1,4 +1,4 @@
-package john.LOGIN_SYSTEM.forgetpassword;
+package john.LOGIN_SYSTEM.monolith.forgetpassword;
 
 import jakarta.servlet.http.HttpSession;
 import john.LOGIN_SYSTEM.common.components.PasswordStrength;
@@ -8,10 +8,10 @@ import john.LOGIN_SYSTEM.common.components.email.TransactionType;
 import john.LOGIN_SYSTEM.common.response.ResponseLayer;
 import john.LOGIN_SYSTEM.common.response.ResponseTerminal;
 import john.LOGIN_SYSTEM.common.response.ResponseType;
-import john.LOGIN_SYSTEM.forgetpassword.token.CodeToken;
-import john.LOGIN_SYSTEM.forgetpassword.token.CodeTokenService;
-import john.LOGIN_SYSTEM.repository.entity.user.UserEntity;
-import john.LOGIN_SYSTEM.repository.entity.user.UserRepository;
+import john.LOGIN_SYSTEM.persistenceMongodb.token.verificationCode.CodeToken;
+import john.LOGIN_SYSTEM.persistenceMongodb.token.verificationCode.CodeTokenService;
+import john.LOGIN_SYSTEM.persistenceMongodb.user.UserEntity;
+import john.LOGIN_SYSTEM.persistenceMongodb.user.UserRepository;
 import john.LOGIN_SYSTEM.session.SessionService;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,7 +78,7 @@ class ForgetPasswordService {
         // generate entry session for reset password
         int EXPIRATION_IN_MINUTES = 5;
         redisSession.setSession(session, "verification-code", token.getVerificationCode(), EXPIRATION_IN_MINUTES);
-        redisSession.setSession(session, "user-id", user.getId().toString());
+        redisSession.setSession(session, "user-id", user.getId());
 
         terminal.status(ResponseType.ACCOUNT_EXIST);
         return new ResponseLayer(true, "Account exist", HttpStatus.OK);

@@ -1,7 +1,7 @@
 package john.LOGIN_SYSTEM.common.components;
 
-import john.LOGIN_SYSTEM.forgetpassword.token.CodeToken;
-import john.LOGIN_SYSTEM.forgetpassword.token.CodeTokenService;
+import john.LOGIN_SYSTEM.persistenceMongodb.token.verificationCode.CodeToken;
+import john.LOGIN_SYSTEM.persistenceMongodb.token.verificationCode.CodeTokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

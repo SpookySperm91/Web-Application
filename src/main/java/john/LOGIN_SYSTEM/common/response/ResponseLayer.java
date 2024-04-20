@@ -1,6 +1,6 @@
 package john.LOGIN_SYSTEM.common.response;
 
-import john.LOGIN_SYSTEM.repository.entity.user.UserEntity;
+import john.LOGIN_SYSTEM.persistenceMongodb.user.UserEntity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;

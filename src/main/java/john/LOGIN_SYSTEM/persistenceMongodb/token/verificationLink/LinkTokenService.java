@@ -1,4 +1,4 @@
-package john.LOGIN_SYSTEM.register.token;
+package john.LOGIN_SYSTEM.persistenceMongodb.token.verificationLink;
 
 import john.LOGIN_SYSTEM.common.response.ResponseTerminal;
 import john.LOGIN_SYSTEM.common.response.ResponseType;

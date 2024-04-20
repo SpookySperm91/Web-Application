@@ -1,4 +1,4 @@
-package john.LOGIN_SYSTEM.repository.entity.user;
+package john.LOGIN_SYSTEM.persistenceMongodb.user;
 
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -8,8 +8,7 @@ import java.util.Optional;
 
 
 @Repository
-public interface UserRepository extends
-        MongoRepository<UserEntity, ObjectId>,
+public interface UserRepository extends MongoRepository<UserEntity, ObjectId>,
         UserCustomRepository {
     Optional<UserEntity> findByEmail(String email);
 }

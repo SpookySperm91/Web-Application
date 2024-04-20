@@ -1,4 +1,4 @@
-package john.LOGIN_SYSTEM.forgetpassword.token;
+package john.LOGIN_SYSTEM.persistenceMongodb.token.verificationCode;
 
 import john.LOGIN_SYSTEM.common.response.ResponseTerminal;
 import john.LOGIN_SYSTEM.common.response.ResponseType;

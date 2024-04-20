@@ -6,7 +6,7 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 @Component
-class ProcessEmailGenerator {
+public class ProcessEmailGenerator {
     private final TemplateEngine templateEngine;
 
     @Autowired
