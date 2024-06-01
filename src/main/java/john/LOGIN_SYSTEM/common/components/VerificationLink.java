@@ -38,7 +38,7 @@ public class VerificationLink {
     // GENERATE LINK
     public String generateLink(String token) {
         String baseUrl = "http://localhost:8080/";
-        String controllerPoint = "api/register/";
+        String controllerPoint = "api/v1/register/";
         return baseUrl + controllerPoint + token;
     }
 }

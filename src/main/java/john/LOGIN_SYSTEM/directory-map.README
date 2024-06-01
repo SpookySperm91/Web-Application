@@ -11,25 +11,28 @@ Common
     pkg.dto
     pkg.response
 
-Forget-password
-    pkg.token
-    prt.forget-password controller
-    prt.forget-password service
+Monolith
+    Forget-password
+        prt.forget-password controller
+        prt.forget-password service
 
-Login
-    prt.login controller
-    prt.login service
+    Login
+        prt.login controller
+        prt.login service
 
-Register
-    pkg.token
-    prt.register controller
-    prt.register service
+    Register
+        prt.register controller
+        prt.register service
 
-Repository.Entity.user
-    inf.user-custom repository
-    inf.user repository
-    user-custom repository-impl
-    user entity
+Persistence
+    pkg.verification link
+    pkg.verification code
+
+    pkg.mysql
+        inf.user-custom repository
+        inf.user repository
+        user-custom repository-impl
+        user entity
 
 Session
     session service

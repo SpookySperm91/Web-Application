@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @RestController
-@RequestMapping("/api/register")
+@RequestMapping("/api/v1/register")
 class RegisterController {
     private final RegisterService serviceLayer;
     private final PasswordStrength passwordStrength;
@@ -47,7 +47,7 @@ class RegisterController {
     // Proceed to create new account
     // Return response
     @PostMapping("/")
-    public ResponseEntity<ResponseClient> signupUser(@Valid @RequestBody UserDTO request) {
+        public ResponseEntity<ResponseClient> signupUser(@Valid @RequestBody UserDTO request) {
         String sanitizedEmail = Encode.forHtml(request.getEmail());
         String sanitizedUsername = Encode.forHtml(request.getUsername());
         String sanitizedPassword = Encode.forHtml(request.getPassword());

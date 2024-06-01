@@ -16,7 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("api/forget-password")
+@RequestMapping("api/v1/forget-password")
 class ForgetPasswordController {
     private final ForgetPasswordService serviceLayer;
     private final SessionService redisSession;
