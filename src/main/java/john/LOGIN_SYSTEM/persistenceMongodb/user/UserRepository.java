@@ -1,6 +1,5 @@
 package john.LOGIN_SYSTEM.persistenceMongodb.user;
 
-import org.apache.catalina.User;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;

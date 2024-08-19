@@ -1,6 +1,5 @@
 package john.LOGIN_SYSTEM.monolith.register;
 
-import jakarta.servlet.http.HttpSession;
 import john.LOGIN_SYSTEM.common.components.email.EmailService;
 import john.LOGIN_SYSTEM.common.components.email.TransactionType;
 import john.LOGIN_SYSTEM.common.response.ResponseLayer;
