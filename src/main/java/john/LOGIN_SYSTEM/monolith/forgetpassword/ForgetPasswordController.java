@@ -6,9 +6,11 @@ import john.LOGIN_SYSTEM.common.dto.UserDTO;
 import john.LOGIN_SYSTEM.common.dto.VerificationCodeDTO;
 import john.LOGIN_SYSTEM.common.response.ResponseClient;
 import john.LOGIN_SYSTEM.common.response.ResponseType;
+import john.LOGIN_SYSTEM.common.response.ResponseUtil;
+import john.LOGIN_SYSTEM.session.SessionAttr;
 import john.LOGIN_SYSTEM.session.SessionService;
 import org.apache.commons.validator.routines.EmailValidator;
-import org.bson.types.ObjectId;
+import org.jetbrains.annotations.NotNull;
 import org.owasp.encoder.Encode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,14 +19,16 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("api/v1/forget-password")
-class ForgetPasswordController {
+public class ForgetPasswordController {
     private final ForgetPasswordService serviceLayer;
     private final SessionService redisSession;
+    private final ResponseUtil responseUtil;
 
     @Autowired
-    public ForgetPasswordController(ForgetPasswordService serviceLayer, SessionService redisSession) {
+    public ForgetPasswordController(ForgetPasswordService serviceLayer, SessionService redisSession, ResponseUtil responseUtil) {
         this.serviceLayer = serviceLayer;
         this.redisSession = redisSession;
+        this.responseUtil = responseUtil;
     }
 
 
@@ -36,11 +40,10 @@ class ForgetPasswordController {
         String sanitizedEmail = Encode.forHtml(request.getEmail());
 
         if (request.getEmail().isEmpty() || !EmailValidator.getInstance().isValid(sanitizedEmail)) {
-            String message = "ERROR: Invalid email format";
-            HttpStatus status = HttpStatus.NOT_ACCEPTABLE;
-
-            return ResponseEntity.status(status)
-                    .body(new ResponseClient(ResponseType.RESET_PASSWORD_ERROR, message));
+            return responseUtil.buildErrorResponse(
+                    HttpStatus.NOT_ACCEPTABLE,
+                    ResponseType.RESET_PASSWORD_ERROR,
+                    "ERROR: Invalid email format");
         }
         return validateAccount(sanitizedEmail, session);
     }
@@ -48,22 +51,33 @@ class ForgetPasswordController {
     // Verify email
     // Sent verification code via email
     // Return response
+    @NotNull
     private ResponseEntity<ResponseClient> validateAccount(String email, HttpSession session) {
         var validateAccount = serviceLayer.verifyAccountFirst(email, session);
 
-        // Return as success if account exist
+        // Generate entry session for reset password
         if (validateAccount.isSuccess()) {
-            return ResponseEntity.status(validateAccount.getHttpStatus())
-                    .body(new ResponseClient(
-                            ResponseType.RESET_PASSWORD_SUCCESS,
-                            validateAccount.getMessage()));
-        } else {
-            // Email doesnt exist
-            return ResponseEntity.status(validateAccount.getHttpStatus())
-                    .body(new ResponseClient(
-                            ResponseType.RESET_PASSWORD_ERROR,
-                            validateAccount.getMessage()));
+            int EXPIRATION_IN_MINUTES = 25;
+            String TOKEN = validateAccount.getDataAccess().getStrings().getFirst();
+            String ID = validateAccount.getDataAccess().getObjectIds().getFirst().toString();
+
+            redisSession.setSession(session,                      // Create
+                    SessionAttr.VERIFICATION_CODE_SESSION,         // attr = VerificationCode
+                    TOKEN,                                         // body
+                    EXPIRATION_IN_MINUTES);                        // expire
+
+            redisSession.setSession(session,                       // Create
+                    SessionAttr.USER_ID_SESSION,                   // attr = UserId
+                    ID);                                           // expire
         }
+        // HttpStatus.NOT_FOUND
+        // HttpStatus.BAD_REQUEST
+        // HttpStatus.OK
+        // Return as success if account exist
+        return responseUtil.buildResponse(
+                validateAccount.getHttpStatus(),
+                validateAccount.getType(),
+                validateAccount.getMessage());
     }
 
 
@@ -72,38 +86,40 @@ class ForgetPasswordController {
     // return response
     @PostMapping("/verification")
     public ResponseEntity<ResponseClient> isVerificationCodeValid(@RequestBody VerificationCodeDTO request, HttpSession session) {
-        if(session.getAttribute("verification-code") == null) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(new ResponseClient(
-                            ResponseType.VERIFICATION_EXCEPTION,
-                            "Forbidden: Session is expired or does not exist"));
-        }
-
         if (request.getVerification().isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
-                    .body(new ResponseClient(
-                            ResponseType.VERIFICATION_ERROR,
-                            "user input is empty"));
+            return responseUtil.buildErrorResponse(
+                    HttpStatus.NOT_ACCEPTABLE,
+                    ResponseType.VERIFICATION_ERROR,
+                    "user input is empty");
         }
 
-        var validCode = serviceLayer.matchVerification(request.getVerification(), session);
-
-        // Return error if fail
-        if (!validCode.isSuccess()) {
-            return ResponseEntity.status(validCode.getHttpStatus())
-                    .body(new ResponseClient(
-                            ResponseType.VERIFICATION_ERROR,
-                            validCode.getMessage()));
+        if (redisSession.getSession(session, SessionAttr.VERIFICATION_CODE_SESSION) == null) {
+            return responseUtil.buildErrorResponse(
+                    HttpStatus.FORBIDDEN,
+                    ResponseType.VERIFICATION_EXCEPTION,
+                    "Forbidden: Session is expired or does not exist");
         }
-        // else ->
-        // Delete verification session. Generate session for change-password. return response
-        redisSession.removeSession(session, "verification-code");
-        redisSession.setSession(session, "change-password", true, 5);
 
-        return ResponseEntity.status(validCode.getHttpStatus())
-                .body(new ResponseClient(
-                        ResponseType.VERIFICATION_SUCCESS,
-                        validCode.getMessage()));
+        var validCode = serviceLayer.matchVerification(request.getVerification(), request.getEmail(), session);
+
+        // Success. remove former session, generate session for change-password
+        if (validCode.isSuccess()) {
+            redisSession.removeSession(session,                         // Remove
+                    SessionAttr.VERIFICATION_CODE_SESSION);             // attr = VerificationCode
+
+            redisSession.setSession(session,                            // Create
+                    SessionAttr.CHANGE_PASSWORD_SESSION,                // attr = ChangePassword
+                    true,                                               // body
+                    10);                                                // expire
+        }
+
+        // HttpStatus.NOT_FOUND
+        // HttpStatus.BAD_REQUEST
+        // HttpStatus.SUCCESS
+        return responseUtil.buildErrorResponse(
+                validCode.getHttpStatus(),
+                validCode.getType(),
+                validCode.getMessage());
     }
 
 
@@ -112,36 +128,35 @@ class ForgetPasswordController {
     // Return response
     @PutMapping("/change-password")
     public ResponseEntity<ResponseClient> changePassword(@RequestBody PasswordDTO request, HttpSession session) {
-        Boolean sessionValue = (Boolean) redisSession.getSession(session, "change-password");
+        Boolean sessionValue = (Boolean) redisSession.getSession(session, SessionAttr.CHANGE_PASSWORD_SESSION);
         boolean isSessionValid = sessionValue != null && sessionValue; // Defense against NullPointerException
 
         if (!isSessionValid) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
-                    new ResponseClient(ResponseType.RESET_PASSWORD_EXCEPTION,
-                            "Forbidden: Session is expired or does not exist"));
+            System.out.println("Invalid session");
+            return responseUtil.buildErrorResponse(
+                    HttpStatus.FORBIDDEN,
+                    ResponseType.RESET_PASSWORD_EXCEPTION,
+                        "Forbidden: Session is expired or does not exist");
         }
 
         // Retrieve user id from session
         // Perform password-reset
-        ObjectId userId = (ObjectId) redisSession.getSession(session, "user-id");
-        var passwordReset = serviceLayer.resetPassword(userId, request.getNewPassword());
+        String userId = (String) redisSession.getSession(session, SessionAttr.USER_ID_SESSION);
+        var passwordReset = serviceLayer.resetPassword(userId, request);
 
         // Success. remove session attributes
         if (passwordReset.isSuccess()) {
-            redisSession.removeSession(session, "user-id");
-            redisSession.removeSession(session, "change-password");
+            redisSession.removeSession(session, SessionAttr.USER_ID_SESSION);             // Remove, attr = UserId
+            redisSession.removeSession(session, SessionAttr.CHANGE_PASSWORD_SESSION);     // Remove, attr = ChangePassword
+        }
 
-            return ResponseEntity.status(passwordReset.getHttpStatus())
-                    .body(new ResponseClient(
-                            ResponseType.RESET_PASSWORD_SUCCESS,
-                            passwordReset.getMessage()));
-        }
-        // Fail
-        else {
-            return ResponseEntity.status(passwordReset.getHttpStatus())
-                    .body(new ResponseClient(
-                            ResponseType.RESET_PASSWORD_ERROR,
-                            passwordReset.getMessage()));
-        }
+        // HttpStatus.NOT_FOUND
+        // HttpStatus.BAD_REQUEST
+        // HttpStatus.OK
+        // HttpStatus.SERVICE_UNAVAILABLE
+        return responseUtil.buildResponse(
+                passwordReset.getHttpStatus(),
+                passwordReset.getType(),
+                passwordReset.getMessage());
     }
 }

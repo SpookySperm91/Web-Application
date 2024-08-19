@@ -1,13 +1,12 @@
 package john.LOGIN_SYSTEM.common.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Getter
-public class VerificationCodeDTO {
-    private String verification;
+public class EmailDTO {
     private String email;
 }

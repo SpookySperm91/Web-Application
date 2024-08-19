@@ -9,4 +9,6 @@ import lombok.NoArgsConstructor;
 @Getter
 public class PasswordDTO {
     private String newPassword;
+    private String confirmPassword;
+    private String previousPassword;
 }

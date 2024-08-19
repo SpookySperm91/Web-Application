@@ -17,6 +17,7 @@ public class ResponseTerminal {
             case VERIFICATION_SUCCESS -> ("VERIFICATION SERVICE STATUS: SUCCESS, Verification successful.");
             case EMAIL_VERIFICATION_CODE_SUCCESS -> ("EMAIL STATUS: SUCCESS, Verification code is sent");
             case EMAIL_VERIFICATION_LINK_SUCCESS -> ("EMAIL STATUS: SUCCESS, Verification link is sent");
+            case EMAIL_CHANGE_PASSWORD_SUCCESS -> ("EMAIL STATUS: SUCCESS, Change-password link is sent");
             default -> throw new IllegalArgumentException("Unexpected response type: " + type);
         });
     }
@@ -37,7 +38,7 @@ public class ResponseTerminal {
         logger.warn(switch (type) {
             // user status
             case ACCOUNT_VALID -> ("ACCOUNT STATUS: VALID");
-            case ACCOUNT_RESTRICTED-> ("ACCOUNT STATUS: RESTRICTED");
+            case ACCOUNT_RESTRICTED -> ("ACCOUNT STATUS: RESTRICTED");
             case ACCOUNT_BANNED -> ("ACCOUNT STATUS: BANNED");
             case SIGNUP_PENDING -> ("SIGNUP PENDING");
 
@@ -45,12 +46,15 @@ public class ResponseTerminal {
             case LINK_GENERATED -> ("DATABASE QUERY STATUS: TOKEN IS GENERATED");
             case LINK_DELETED -> ("DATABASE QUERY STATUS: TOKEN DELETED");
             case LINK_EXPIRED -> ("DATABASE QUERY STATUS: TOKEN EXPIRED");
-            case VERIFICATION_CODE_GENERATED-> ("DATABASE QUERY STATUS: VERIFICATION CODE GENERATED");
+            case VERIFICATION_CODE_GENERATED -> ("DATABASE QUERY STATUS: VERIFICATION CODE GENERATED");
             case VERIFICATION_CODE_DELETED -> ("DATABASE QUERY STATUS: VERIFICATION CODE DELETED");
             case VERIFICATION_CODE_EXPIRED -> ("DATABASE QUERY STATUS: VERIFICATION CODE EXPIRED, AUTO DELETE");
-            case ACCOUNT_EXIST ->("DATABASE QUERY STATUS: ACCOUNT DATA EXIST");
+            case ACCOUNT_EXIST -> ("DATABASE QUERY STATUS: ACCOUNT DATA EXIST");
             case ACCOUNT_NOT_EXIST -> ("DATABASE QUERY STATUS: ACCOUNT DATA DOES NOT EXIST");
-            default -> throw new IllegalArgumentException("Unexpected response type: " + type);
+
+            // external issues
+            case REDIS_SESSION_OFFLINE -> ("REDIS SESSION STATUS: OFFLINE");
+                default -> throw new IllegalArgumentException("Unexpected response type: " + type);
         });
     }
 }

@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -17,22 +19,24 @@ import java.util.Map;
 
 @Component
 public class EmailService {
-    private final JavaMailSender emailSender;
-    private final ProcessEmailGenerator processEmail;
     @Value("${spring.mail.username}")
     private String emailFrom;
+    private final JavaMailSender emailSender;
     private final Map<TransactionType, String> templateMapping;
     private final ResponseTerminal log;
+    private final TemplateEngine templateEngine;
+
 
     @Autowired
-    public EmailService(JavaMailSender emailSender, ProcessEmailGenerator processEmail, ResponseTerminal log) {
+    public EmailService(JavaMailSender emailSender, ResponseTerminal log, TemplateEngine templateEngine) {
         this.emailSender = emailSender;
-        this.processEmail = processEmail;
         this.log = log;
+        this.templateEngine = templateEngine;
 
         templateMapping = new HashMap<>();
         templateMapping.put(TransactionType.REGISTER, "VerificationLink.html");
         templateMapping.put(TransactionType.RESET_PASSWORD, "VerificationCode.html");
+        templateMapping.put(TransactionType.RESET_PASSWORD_AUTHENTICATED, "ChangePassword.html");
     }
 
 
@@ -44,15 +48,16 @@ public class EmailService {
             helper.setFrom(new InternetAddress(emailFrom));
             helper.setTo(userEmail);
 
-            String htmlContent = processEmail.processEmailMessage(username, body, getTemplateName(type));
+            String htmlContent = processEmail(username, body, getTemplateName(type));
             helper.setText(htmlContent, true);
 
             emailSender.send(message);
+
             log.success(switch (type) {
                 case REGISTER -> ResponseType.EMAIL_VERIFICATION_LINK_SUCCESS;
                 case RESET_PASSWORD -> ResponseType.EMAIL_VERIFICATION_CODE_SUCCESS;
+                case RESET_PASSWORD_AUTHENTICATED -> ResponseType.EMAIL_CHANGE_PASSWORD_SUCCESS;
             });
-
             // If the send method doesn't throw an exception, consider it successful
         } catch (MessagingException e) {
             // Log the exception or handle it as needed
@@ -63,5 +68,15 @@ public class EmailService {
     // Retrieve a specific html email message
     private String getTemplateName(TransactionType type) {
         return templateMapping.getOrDefault(type, "defaultTemplateName");
+    }
+
+
+    private String processEmail(String username, String body, String transactionType) {
+        Context context = new Context();
+        context.setVariable("username", username);
+        context.setVariable("body", body);
+
+        // Process the Thymeleaf template
+        return templateEngine.process(transactionType, context);
     }
 }

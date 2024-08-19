@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Expired</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: url('[[${baseUrl}]]/images/invalid-session.jpeg') no-repeat center center fixed;
+            background-size: cover;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            text-align: center;
+        }
+        .message-box {
+            padding: 20px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            background-color: rgba(0, 0, 0, 0.7); /* Dark and transparent background */
+            color: #ffffff; /* White text color for better contrast */
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+        p {
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+        a {
+            color: #80d4ff; /* Light blue color for links */
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="message-box">
+        <h1>Session Expired</h1>
+        <p>It seems that your session has expired or is invalid. Please log in again to continue.</p>
+    </div>
+</div>
+</body>
+</html>

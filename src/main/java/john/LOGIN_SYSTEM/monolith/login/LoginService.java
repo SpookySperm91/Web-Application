@@ -11,11 +11,11 @@ import java.util.Optional;
 
 @Service
 class LoginService {
-    private final UserRepository repository;
+    private final UserRepository userRepository;
     private final PasswordComparison passwordComparison;
 
-    public LoginService(UserRepository repository, PasswordComparison passwordComparison) {
-        this.repository = repository;
+    public LoginService(UserRepository userRepository, PasswordComparison passwordComparison) {
+        this.userRepository = userRepository;
         this.passwordComparison = passwordComparison;
     }
 
@@ -23,7 +23,7 @@ class LoginService {
     // AUTHENTICATE USER ACCOUNT; Return false if account didn't exist
     // Perform secure password comparison; Return a response
     public ResponseLayer authenticateUser(String email, String password) {
-        Optional<UserEntity> userExist = repository.findByEmail(email);
+        Optional<UserEntity> userExist = userRepository.findByEmail(email);
 
         if (userExist.isEmpty()) {
             return new ResponseLayer(false, "Invalid Email or Password", HttpStatus.BAD_REQUEST);
@@ -35,14 +35,16 @@ class LoginService {
         }
 
         // Account Locked
-        if(!userExist.get().isEnabled()) {
+        if (!userExist.get().isEnabled()) {
             return new ResponseLayer(false, "Account is Locked", HttpStatus.BAD_REQUEST);
         }
 
-        // Set account login true
-        userExist.get().setLogged(true);
-        repository.save(userExist.get());
-        return new ResponseLayer(true, "Login Success", HttpStatus.OK);
+        // instantiating data for session back to the controller
+        ResponseLayer.DataAccess data = new ResponseLayer.DataAccess();
+        data.addObjectId(userExist.get().getId());
+        data.addString(userExist.get().getEmail());
+
+        return new ResponseLayer(data, true, "Login Success", HttpStatus.OK);
     }
 }
 

@@ -1,5 +1,5 @@
 package john.LOGIN_SYSTEM.common.components.email;
 
 public enum TransactionType {
-    REGISTER, RESET_PASSWORD
+    REGISTER, RESET_PASSWORD, RESET_PASSWORD_AUTHENTICATED
 }

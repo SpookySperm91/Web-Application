@@ -10,7 +10,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
-@Document(collection = "user-account-data")
+@Document(collection = "#{@mongoDocumentConfig.userAccountData}")
 @AllArgsConstructor
 @Data
 public class UserEntity {

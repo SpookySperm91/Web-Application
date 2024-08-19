@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verification Expired</title>
-    <style>
+    <style th:inline="text">
         body {
             font-family: Arial, sans-serif;
+            background-image: url('[[${baseUrl}]]/images/unhinged.jpeg');
+            background-size: cover;
+            background-position: center;
             margin: 0;
             padding: 0;
             display: flex;
@@ -14,10 +17,6 @@
             align-items: center;
             height: 100vh;
             text-align: center;
-            position: relative; /* Relative positioning for body */
-            background-image: url('/unhinged.jpg'); /* Relative path to your image */
-            background-size: cover;
-            background-position: center;
         }
 
         .background-overlay {
@@ -75,12 +74,17 @@
         }
     </style>
 </head>
+
 <body>
-<div class="background-overlay">
-    <div class="container">
-        <h1>Verification Expired</h1>
-        <p>Sorry, your verification link has expired.</p>
+    <div class="background-overlay">
+        <div class="container">
+            <h1>Verification Expired</h1>
+            <p>Sorry, your verification link has expired.</p>
+        </div>
     </div>
-</div>
 </body>
 </html>
+
+
+
+

@@ -11,4 +11,6 @@ public interface CodeTokenRepository
         extends MongoRepository<CodeToken, ObjectId> {
     // @Cacheable(value = "verification-code", key = "#code")
     Optional<CodeToken> findByVerificationCode (String code);
+
+    Optional<CodeToken> findByEmail (String email);
 }

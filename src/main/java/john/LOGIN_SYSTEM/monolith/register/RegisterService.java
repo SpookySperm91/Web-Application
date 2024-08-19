@@ -1,12 +1,14 @@
 package john.LOGIN_SYSTEM.monolith.register;
 
-import john.LOGIN_SYSTEM.common.components.VerificationLink;
+import jakarta.servlet.http.HttpSession;
 import john.LOGIN_SYSTEM.common.components.email.EmailService;
 import john.LOGIN_SYSTEM.common.components.email.TransactionType;
 import john.LOGIN_SYSTEM.common.response.ResponseLayer;
 import john.LOGIN_SYSTEM.common.response.ResponseTerminal;
 import john.LOGIN_SYSTEM.common.response.ResponseType;
+import john.LOGIN_SYSTEM.persistenceMongodb.token.VerificationType;
 import john.LOGIN_SYSTEM.persistenceMongodb.token.verificationLink.LinkToken;
+import john.LOGIN_SYSTEM.persistenceMongodb.token.verificationLink.LinkTokenService;
 import john.LOGIN_SYSTEM.persistenceMongodb.user.UserEntity;
 import john.LOGIN_SYSTEM.persistenceMongodb.user.UserRepository;
 import org.apache.commons.validator.routines.EmailValidator;
@@ -22,22 +24,22 @@ import java.time.LocalDateTime;
 class RegisterService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
-    private final VerificationLink verification;
     private final EmailService emailService;
     private final ResponseTerminal terminal;
+    private final LinkTokenService linkService;
 
 
     @Autowired
     public RegisterService(UserRepository userRepository,
                            BCryptPasswordEncoder passwordEncoder,
-                           VerificationLink verification,
                            EmailService emailService,
-                           ResponseTerminal terminal) {
+                           ResponseTerminal terminal,
+                           LinkTokenService linkService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.verification = verification;
         this.emailService = emailService;
         this.terminal = terminal;
+        this.linkService = linkService;
     }
 
 
@@ -80,13 +82,20 @@ class RegisterService {
 
         // Generate token for link url
         LinkToken tokenID = new LinkToken(pendingUser.getId());
-        verification.generateToken(tokenID);
+        linkService.generateToken(tokenID);
+        linkService.saveVerificationLink(tokenID);
 
         // Generate link. Send verification via email
-        String link = verification.generateLink(tokenID.getToken());
+        String link = linkService.generateLink(tokenID.getToken(), VerificationType.CREATE_USER);
         emailService.sendEmail(username, email, link, TransactionType.REGISTER);
 
-        return savePendingAccount(pendingUser, username, email, password);
+        // save link id in session for faster retrieval
+        ResponseLayer.DataAccess data = new ResponseLayer.DataAccess();
+        data.addObject(tokenID);                                                    // body = LinkToken
+        data.addDate(tokenID.getExpireAt());                                        // expire
+
+        terminal.status(ResponseType.LINK_GENERATED);
+        return savePendingAccount(data, pendingUser, username, email, password);
     }
 
 
@@ -102,7 +111,7 @@ class RegisterService {
     // Set Date for creation
     // Save the new account (with the instance id)
     // Return response
-    private ResponseLayer savePendingAccount(UserEntity pendingUser, String username, String email, String password) {
+    private ResponseLayer savePendingAccount(ResponseLayer.DataAccess data, UserEntity pendingUser, String username, String email, String password) {
         try {
             String salt = BCrypt.gensalt(); // Generate a unique salt
             String hashedPassword = passwordEncoder.encode(salt + password);
@@ -118,7 +127,8 @@ class RegisterService {
             userRepository.saveUserAccount(pendingUser);
 
             terminal.success(ResponseType.SIGNUP_SUCCESS);
-            return new ResponseLayer(true,
+            return new ResponseLayer(data,
+                    true,
                     "Registration successful. Proceed to email verification"
                     , HttpStatus.CREATED);
 

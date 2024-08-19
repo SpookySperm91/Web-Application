@@ -1,22 +1,30 @@
 package john.LOGIN_SYSTEM.monolith.register;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpSession;
 import john.LOGIN_SYSTEM.common.components.AccountLock;
 import john.LOGIN_SYSTEM.common.components.PasswordStrength;
+import john.LOGIN_SYSTEM.common.config.PropertiesConfig;
 import john.LOGIN_SYSTEM.common.dto.UserDTO;
-import john.LOGIN_SYSTEM.common.response.*;
+import john.LOGIN_SYSTEM.common.response.ResponseClient;
+import john.LOGIN_SYSTEM.common.response.ResponseLayer;
+import john.LOGIN_SYSTEM.common.response.ResponseType;
+import john.LOGIN_SYSTEM.common.response.ResponseUtil;
+import john.LOGIN_SYSTEM.persistenceMongodb.token.verificationLink.LinkToken;
 import john.LOGIN_SYSTEM.persistenceMongodb.token.verificationLink.LinkTokenService;
+import john.LOGIN_SYSTEM.session.SessionAttr;
+import john.LOGIN_SYSTEM.session.SessionService;
 import org.owasp.encoder.Encode;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.ModelAndView;
 
 import javax.validation.Valid;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,16 +36,24 @@ class RegisterController {
     private final PasswordStrength passwordStrength;
     private final LinkTokenService tokenService;
     private final AccountLock accountLock;
+    private final SessionService redisSession;
+    private final PropertiesConfig propertiesConfig;
+    private final ResponseUtil responseUtil;
 
     @Autowired
     public RegisterController(RegisterService signupService,
                               PasswordStrength passwordStrength,
                               LinkTokenService tokenService,
-                              AccountLock accountLock) {
+                              AccountLock accountLock, SessionService redisSession,
+                              PropertiesConfig propertiesConfig,
+                              ResponseUtil responseUtil) {
         this.serviceLayer = signupService;
         this.passwordStrength = passwordStrength;
         this.tokenService = tokenService;
         this.accountLock = accountLock;
+        this.redisSession = redisSession;
+        this.propertiesConfig = propertiesConfig;
+        this.responseUtil = responseUtil;
     }
 
 
@@ -47,7 +63,7 @@ class RegisterController {
     // Proceed to create new account
     // Return response
     @PostMapping("/")
-        public ResponseEntity<ResponseClient> signupUser(@Valid @RequestBody UserDTO request) {
+    public ResponseEntity<ResponseClient> signupUser(@Valid @RequestBody UserDTO request, HttpSession session) throws Exception {
         String sanitizedEmail = Encode.forHtml(request.getEmail());
         String sanitizedUsername = Encode.forHtml(request.getUsername());
         String sanitizedPassword = Encode.forHtml(request.getPassword());
@@ -61,20 +77,27 @@ class RegisterController {
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
 
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(
-                            new ResponseClient(ResponseType.SIGNUP_ERROR,
-                                    "ERROR: " + String.join(", ", errorMessages)));
+            return responseUtil.buildErrorResponse(
+                    HttpStatus.BAD_REQUEST,
+                    ResponseType.SIGNUP_ERROR,
+                    "ERROR: " + String.join(", ", errorMessages));
         }
-
 
         // Create token for email verification
         var signupResponse = serviceLayer.verificationProcess(sanitizedUsername, sanitizedEmail, sanitizedPassword);
 
-        return ResponseEntity.status(signupResponse.getHttpStatus())
-                .body(new ResponseClient(
-                                ResponseType.SIGNUP_PENDING,
-                                signupResponse.getMessage()));
+        // set session
+        Map<String, Object> sessionData = redisSession.convertToMap(signupResponse.getDataAccess().getObjects().getFirst());
+        redisSession.setSessionHash(session,                                            // Create(hash)
+                SessionAttr.VERIFICATION_LINK_SESSION,                                  // attr = VerificationLink
+                sessionData,                                                            // body
+                signupResponse.getDataAccess().getDates().getFirst().getTime());        // expire
+
+
+        return responseUtil.buildResponse(
+                signupResponse.getHttpStatus(),
+                ResponseType.SIGNUP_PENDING,
+                signupResponse.getMessage());
     }
 
 
@@ -83,30 +106,39 @@ class RegisterController {
     // Enable locked account
     // Delete the link
     @GetMapping("/{verification}")
-    public ResponseEntity<String> verificationProcess(@PathVariable String verification) {
+    public ModelAndView verificationProcess(@PathVariable String verification, Model model, HttpSession session) {
+        Map<String, Object> value = redisSession.getSessionHash(session, SessionAttr.VERIFICATION_LINK_SESSION);
+        LinkToken retrievedToken;
 
-        return tokenService.getVerificationLink(verification)
-                .map(token -> {
-                    accountLock.enableAccount(token);
-                    tokenService.deleteVerificationLink(token);
+        if (!value.isEmpty()) {
+            retrievedToken = new ObjectMapper().convertValue(value, LinkToken.class);
+            System.out.println(retrievedToken);
 
-                    return ResponseEntity.accepted()
-                            .body(readHTMLFile("static/verification-success.html"));
-                }).orElseGet(() ->
-                        ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(readHTMLFile("static/verification-expired.html")));
+            if (retrievedToken.getToken().equals(verification)) {
+                accountLock.enableAccount(retrievedToken);
+                tokenService.deleteVerificationLink(retrievedToken);
+                redisSession.removeSession(session, SessionAttr.VERIFICATION_LINK_SESSION);
 
-    }
+                model.addAttribute("baseUrl", propertiesConfig.getBaseUrl());
+                return new ModelAndView("verification-success", model.asMap());
+            } else {  // persistence if value not found in redis
+                return tokenService.getVerificationLink(verification)
+                        .map(token -> {
+                            accountLock.enableAccount(token);
+                            tokenService.deleteVerificationLink(token);
+                            redisSession.removeSession(session, SessionAttr.VERIFICATION_LINK_SESSION);
 
-    private String readHTMLFile(String fileName) {
-        ClassPathResource resource = new ClassPathResource(fileName);
-        try {
-            byte[] bytes = Files.readAllBytes(Paths.get(resource.getURI()));
-            return new String(bytes);
-        } catch (IOException e) {
-            System.out.println("Error reading HTML file: " + e.getMessage());
-            return ""; // Return empty string if file reading fails
+                            model.addAttribute("baseUrl", propertiesConfig.getBaseUrl());
+                            return new ModelAndView("verification-success", model.asMap());
+                        }).orElseGet(() -> {
+                            model.addAttribute("baseUrl", propertiesConfig.getBaseUrl());
+                            return new ModelAndView("verification-expired", model.asMap());
+                        });
+            }
         }
+        model.addAttribute("baseUrl", propertiesConfig.getBaseUrl());
+        return new ModelAndView("InvalidSession", model.asMap());
     }
 }
+
 
